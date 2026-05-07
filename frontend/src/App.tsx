@@ -1,10 +1,34 @@
 import { useState } from 'react'
 import CartComponent from './components/CartComponent'
+import ProductsComponent from './components/ProductsComponent'
 import './App.css'
 
 function App() {
   const [page, setPage] = useState<'cart' | 'products'>('products')
   const userId = 'user01'
+
+  const handleAddToCart = async (productId: string, quantity: number) => {
+    try {
+      const response = await fetch('/api/cart/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer token123',
+        },
+        body: JSON.stringify({
+          userId,
+          productId,
+          quantity,
+        }),
+      });
+      if (response.ok) {
+        alert('Thêm vào giỏ hàng thành công');
+        setPage('cart');
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+    }
+  }
 
   return (
     <div id="root">
@@ -19,10 +43,7 @@ function App() {
 
       <main style={{ padding: '2rem' }}>
         {page === 'products' && (
-          <div>
-            <h1>Products</h1>
-            <p>Product listing would go here (P001: Laptop Dell 15M, P002: Mouse 500K, etc.)</p>
-          </div>
+          <ProductsComponent userId={userId} onAddToCart={handleAddToCart} />
         )}
         {page === 'cart' && <CartComponent userId={userId} />}
       </main>

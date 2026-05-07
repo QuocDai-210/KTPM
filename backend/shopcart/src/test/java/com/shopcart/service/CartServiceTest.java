@@ -13,6 +13,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.shopcart.dto.CartItemRequest;
+import com.shopcart.entity.CartItem;
+import com.shopcart.entity.Product;
+import com.shopcart.exception.InsufficientStockException;
+import com.shopcart.exception.ProductNotFoundException;
+import com.shopcart.repository.CartRepository;
+import com.shopcart.repository.ProductRepository;
+
 @DisplayName("Cart Service Unit Tests")
 @ExtendWith(MockitoExtension.class)
 class CartServiceTest {
