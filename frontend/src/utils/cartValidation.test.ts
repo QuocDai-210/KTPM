@@ -20,7 +20,7 @@ describe('Cart Validation Tests', () => {
     test('TC2: Quantity = null - nên trả về lỗi', () => {
       const result = validateCartItem({
         productId: 'P001',
-        quantity: null as any,
+        quantity: null as unknown as number,
         stock: 10,
       });
       expect(result.valid).toBe(false);
@@ -30,7 +30,7 @@ describe('Cart Validation Tests', () => {
     test('TC3: Quantity = undefined - nên trả về lỗi', () => {
       const result = validateCartItem({
         productId: 'P001',
-        quantity: undefined as any,
+        quantity: undefined as unknown as number,
         stock: 10,
       });
       expect(result.valid).toBe(false);
@@ -200,7 +200,7 @@ describe('Cart Validation Tests', () => {
     });
 
     test('TC20: Giỏ hàng rỗng - available = true', () => {
-      const items: any[] = [];
+      const items: Array<{ productId: string; quantity: number; stock: number }> = [];
       const result = checkInventoryAvailability(items);
 
       expect(result.available).toBe(true);

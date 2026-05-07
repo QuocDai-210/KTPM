@@ -22,21 +22,27 @@ public class CartService {
   }
 
   public CartItem addToCart(String userId, CartItemRequest request) {
+    if (request.getQuantity() == null || request.getQuantity() < 1) {
+      throw new IllegalArgumentException("Số lượng phải lớn hơn 0");
+    }
+
     Optional<Product> pOpt = productRepository.findById(request.getProductId());
     if (pOpt.isEmpty()) {
       throw new ProductNotFoundException("Sản phẩm không tồn tại");
     }
 
     Product p = pOpt.get();
-    if (request.getQuantity() > p.getStock()) {
+    Optional<CartItem> existing = cartRepository.findByUserIdAndProductId(userId, request.getProductId());
+    int currentQuantity = existing.map(CartItem::getQuantity).orElse(0);
+    int nextQuantity = currentQuantity + request.getQuantity();
+    if (nextQuantity > p.getStock()) {
       throw new InsufficientStockException("Tồn kho không đủ");
     }
 
-    Optional<CartItem> existing = cartRepository.findByUserIdAndProductId(userId, request.getProductId());
     CartItem item;
     if (existing.isPresent()) {
       item = existing.get();
-      item.setQuantity(item.getQuantity() + request.getQuantity());
+      item.setQuantity(nextQuantity);
     } else {
       item = new CartItem(p.getId(), request.getQuantity(), p.getName(), p.getPrice());
     }
@@ -49,9 +55,16 @@ public class CartService {
   }
 
   public CartItem updateQuantity(String userId, String productId, int quantity) {
+    if (quantity < 1) {
+      throw new IllegalArgumentException("Số lượng phải lớn hơn 0");
+    }
     Optional<CartItem> opt = cartRepository.findByUserIdAndProductId(userId, productId);
     if (opt.isEmpty()) {
       return null;
+    }
+    Product product = productRepository.findById(productId).orElseThrow(() -> new ProductNotFoundException("Sản phẩm không tồn tại"));
+    if (quantity > product.getStock()) {
+      throw new InsufficientStockException("Tồn kho không đủ");
     }
     CartItem item = opt.get();
     item.setQuantity(quantity);

@@ -2,6 +2,18 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Cart E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
+    await page.route('**/api/products', async (route) => {
+      await route.fulfill({
+        json: [
+          { id: 'P001', name: 'Laptop Dell', price: 15000000, stock: 10 },
+          { id: 'P002', name: 'Mouse Logitech', price: 500000, stock: 50 },
+          { id: 'P003', name: 'Keyboard Mechanical', price: 2000000, stock: 0 },
+        ],
+      });
+    });
+    await page.route('**/api/cart/user01', async (route) => {
+      await route.fulfill({ json: { success: true, items: [], itemCount: 0, cartTotal: 0 } });
+    });
     await page.goto('http://localhost:5173');
   });
 

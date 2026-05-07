@@ -19,4 +19,9 @@ public class GlobalExceptionHandler {
   public ResponseEntity<CartResponse> handleNotFound(ProductNotFoundException ex) {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(CartResponse.builder().success(false).message(ex.getMessage()).build());
   }
+
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ResponseEntity<CartResponse> handleIllegalArgument(IllegalArgumentException ex) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(CartResponse.builder().success(false).message(ex.getMessage()).build());
+  }
 }

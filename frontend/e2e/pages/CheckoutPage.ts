@@ -1,8 +1,12 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 // Page Object Model for Checkout
 class CheckoutPage {
-  constructor(private page: any) {}
+  private page: Page;
+
+  constructor(page: Page) {
+    this.page = page;
+  }
 
   async goToCheckout() {
     await this.page.click('[data-testid="checkout-btn"]');
@@ -26,8 +30,12 @@ class CheckoutPage {
 
 test.describe('CheckoutPage', () => {
   test('Hiển thị tổng giá chính xác', async ({ page }) => {
+    await page.route('**/api/products', async (route) => {
+      await route.fulfill({ json: [{ id: 'P001', name: 'Laptop Dell', price: 15000000, stock: 10 }] });
+    });
     const checkoutPage = new CheckoutPage(page);
     await page.goto('http://localhost:5173/checkout');
+    void checkoutPage;
     
     // Wait for page to load
     await page.waitForTimeout(500);

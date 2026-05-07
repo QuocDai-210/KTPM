@@ -9,6 +9,7 @@ import com.shopcart.entity.OrderItem;
 import com.shopcart.entity.OrderStatus;
 import com.shopcart.exception.InsufficientStockException;
 import com.shopcart.repository.OrderRepository;
+import com.shopcart.repository.ProductRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -18,15 +19,23 @@ import org.springframework.stereotype.Service;
 public class OrderService {
   private final OrderRepository orderRepository;
   private final InventoryService inventoryService;
+  private final ProductRepository productRepository;
 
-  public OrderService(OrderRepository orderRepository, InventoryService inventoryService) {
+  public OrderService(OrderRepository orderRepository, InventoryService inventoryService, ProductRepository productRepository) {
     this.orderRepository = orderRepository;
     this.inventoryService = inventoryService;
+    this.productRepository = productRepository;
   }
 
   public OrderResponse createOrder(OrderRequest request) {
+    if (request.getItems() == null || request.getItems().isEmpty()) {
+      throw new IllegalArgumentException("Đơn hàng phải có ít nhất một sản phẩm");
+    }
     // Check inventory
     for (OrderItemRequest it : request.getItems()) {
+      if (it.getQuantity() == null || it.getQuantity() < 1) {
+        throw new IllegalArgumentException("Số lượng phải lớn hơn 0");
+      }
       if (!inventoryService.isAvailable(it.getProductId(), it.getQuantity())) {
         throw new InsufficientStockException("Tồn kho không đủ");
       }
@@ -38,7 +47,10 @@ public class OrderService {
     // map items
     List<OrderItem> items = new ArrayList<>();
     for (OrderItemRequest it : request.getItems()) {
-      items.add(new OrderItem(it.getProductId(), it.getQuantity(), it.getPrice()));
+      long catalogPrice = productRepository.findById(it.getProductId())
+          .orElseThrow(() -> new IllegalArgumentException("Sản phẩm không tồn tại"))
+          .getPrice();
+      items.add(new OrderItem(it.getProductId(), it.getQuantity(), catalogPrice));
     }
     order.setItems(items);
     order.setUserId(request.getUserId());
@@ -58,7 +70,10 @@ public class OrderService {
   public Long calculateOrderTotal(OrderRequest request) {
     long subtotal = 0L;
     for (OrderItemRequest it : request.getItems()) {
-      subtotal += it.getPrice() * it.getQuantity();
+      long catalogPrice = productRepository.findById(it.getProductId())
+          .orElseThrow(() -> new IllegalArgumentException("Sản phẩm không tồn tại"))
+          .getPrice();
+      subtotal += catalogPrice * it.getQuantity();
     }
 
     long discount = 0L;
@@ -66,6 +81,12 @@ public class OrderService {
       Optional<Coupon> couponOpt = orderRepository.findCoupon(request.getCouponCode());
       if (couponOpt.isPresent()) {
         Coupon c = couponOpt.get();
+        if (c.getExpiryDate() != null && java.time.LocalDate.now().isAfter(java.time.LocalDate.parse(c.getExpiryDate()))) {
+          throw new IllegalArgumentException("Mã giảm giá đã hết hạn");
+        }
+        if (c.getMinOrderValue() != null && subtotal < c.getMinOrderValue()) {
+          throw new IllegalArgumentException("Đơn hàng chưa đạt giá trị tối thiểu cho mã giảm giá");
+        }
         if ("PERCENT".equals(c.getDiscountType())) {
           discount = (long) (subtotal * (c.getDiscountValue() / 100.0));
         } else if ("FIXED".equals(c.getDiscountType())) {

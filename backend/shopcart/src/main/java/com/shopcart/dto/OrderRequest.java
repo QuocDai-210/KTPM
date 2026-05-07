@@ -15,4 +15,6 @@ public class OrderRequest {
   private List<OrderItemRequest> items;
   private String couponCode;
   private Long shippingFee;
+  private String shippingAddress;
+  private String paymentMethod;
 }

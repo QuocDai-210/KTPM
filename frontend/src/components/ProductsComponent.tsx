@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import * as cartService from '../services/cartService';
 
 interface Product {
   id: string;
@@ -12,24 +13,43 @@ interface ProductsComponentProps {
   onAddToCart?: (productId: string, quantity: number) => void;
 }
 
-const ProductsComponent: React.FC<ProductsComponentProps> = ({
+const fallbackProducts: Product[] = [
+  { id: 'P001', name: 'Laptop Dell XPS 13', price: 15000000, stock: 10 },
+  { id: 'P002', name: 'Wireless Mouse', price: 500000, stock: 50 },
+  { id: 'P003', name: 'USB-C Cable', price: 150000, stock: 0 },
+];
+
+const ProductsComponent = ({
   userId,
   onAddToCart,
-}) => {
+}: ProductsComponentProps) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
 
   useEffect(() => {
-    // Mock products data
-    const mockProducts: Product[] = [
-      { id: 'P001', name: 'Laptop Dell XPS 13', price: 15000000, stock: 10 },
-      { id: 'P002', name: 'Wireless Mouse', price: 500000, stock: 50 },
-      { id: 'P003', name: 'USB-C Cable', price: 150000, stock: 100 },
-    ];
-    setProducts(mockProducts);
-    setLoading(false);
+    let active = true;
+    cartService
+      .getProducts()
+      .then((data) => {
+        if (active) {
+          setProducts(Array.isArray(data) ? data : fallbackProducts);
+          setError(null);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setProducts(fallbackProducts);
+          setError('Đang dùng dữ liệu mẫu vì chưa kết nối được API sản phẩm');
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, [userId]);
 
   const handleQuantityChange = (productId: string, quantity: number) => {

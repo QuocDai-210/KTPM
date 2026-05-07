@@ -31,7 +31,7 @@ function App() {
   }
 
   return (
-    <div id="root">
+    <div id="app-shell">
       <nav style={{ padding: '1rem', borderBottom: '1px solid #ccc' }}>
         <button onClick={() => setPage('products')} style={{ marginRight: '1rem' }}>
           Products

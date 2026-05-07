@@ -12,7 +12,7 @@ describe('Price Calculation Tests', () => {
         { price: 15000000, quantity: 2 },
         { price: 500000, quantity: 1 },
       ];
-      const result = calculateOrderPrice(items, null as any, 50000);
+      const result = calculateOrderPrice(items, null as unknown as undefined, 50000);
 
       expect(result.subtotal).toBe(30500000);
       expect(result.discount).toBe(0);
@@ -226,7 +226,7 @@ describe('Price Calculation Tests', () => {
     });
 
     test('TC17: Giỏ hàng rỗng', () => {
-      const items: any[] = [];
+      const items: Array<{ productId: string; quantity: number; stock: number }> = [];
       const result = checkInventoryAvailabilityForOrder(items);
 
       expect(result.available).toBe(true);

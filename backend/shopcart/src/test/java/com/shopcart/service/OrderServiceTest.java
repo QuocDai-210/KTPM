@@ -55,6 +55,10 @@ class OrderServiceTest {
             .build();
 
     when(inventoryService.isAvailable("P001", 2)).thenReturn(true);
+    when(productRepository.findById("P001"))
+        .thenReturn(Optional.of(new Product("P001", "Laptop Dell", 15000000L, 10)));
+    when(orderRepository.findCoupon("SALE10"))
+        .thenReturn(Optional.of(new com.shopcart.entity.Coupon("SALE10", "PERCENT", 10L, 0L, "2026-12-31")));
     when(orderRepository.save(any(Order.class)))
         .thenAnswer(inv -> {
           Order o = inv.getArgument(0);
@@ -129,6 +133,10 @@ class OrderServiceTest {
             .couponCode("SALE10")
             .shippingFee(50000L)
             .build();
+    when(productRepository.findById("P001"))
+        .thenReturn(Optional.of(new Product("P001", "Laptop Dell", 15000000L, 10)));
+    when(orderRepository.findCoupon("SALE10"))
+        .thenReturn(Optional.of(new com.shopcart.entity.Coupon("SALE10", "PERCENT", 10L, 0L, "2026-12-31")));
 
     // Act
     Long totalPrice = orderService.calculateOrderTotal(request);
@@ -168,6 +176,8 @@ class OrderServiceTest {
             .build();
 
     when(orderRepository.findCoupon("INVALID")).thenReturn(Optional.empty());
+    when(productRepository.findById("P001"))
+        .thenReturn(Optional.of(new Product("P001", "Laptop Dell", 15000000L, 10)));
     when(inventoryService.isAvailable("P001", 2)).thenReturn(true);
     when(orderRepository.save(any(Order.class)))
         .thenAnswer(inv -> {

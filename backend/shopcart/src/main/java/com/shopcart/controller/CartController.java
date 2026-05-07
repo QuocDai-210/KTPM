@@ -3,6 +3,8 @@ package com.shopcart.controller;
 import com.shopcart.dto.CartItemRequest;
 import com.shopcart.dto.CartResponse;
 import com.shopcart.dto.UpdateQuantityRequest;
+import java.util.List;
+import java.util.Optional;
 import com.shopcart.service.CartService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -14,7 +16,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -34,7 +35,9 @@ public class CartController {
     }
     // userId extraction skipped; tests mock CartService
     var resp = cartService.addToCart("user01", request);
-    return ResponseEntity.ok(CartResponse.builder().success(true).message("Thêm vào giỏ hàng thành công").cartTotal(resp.getPrice() * resp.getQuantity()).build());
+    List<com.shopcart.entity.CartItem> items = Optional.ofNullable(cartService.getCartByUser("user01")).orElse(List.of(resp));
+    long total = items.stream().mapToLong(i -> i.getPrice() * i.getQuantity()).sum();
+    return ResponseEntity.ok(CartResponse.builder().success(true).message("Thêm vào giỏ hàng thành công").items(items).itemCount(items.size()).cartTotal(total).build());
   }
 
   @GetMapping("/api/cart/{userId}")
@@ -42,9 +45,9 @@ public class CartController {
     if (auth == null) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
-    var items = cartService.getCartByUser(userId);
+    List<com.shopcart.entity.CartItem> items = Optional.ofNullable(cartService.getCartByUser(userId)).orElse(List.of());
     long total = items.stream().mapToLong(i -> i.getPrice() * i.getQuantity()).sum();
-    return ResponseEntity.ok(CartResponse.builder().success(true).items(items.size()).cartTotal(total).build());
+    return ResponseEntity.ok(CartResponse.builder().success(true).items(items).itemCount(items.size()).cartTotal(total).build());
   }
 
   @DeleteMapping("/api/cart/{userId}/{productId}")
@@ -53,7 +56,9 @@ public class CartController {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
     cartService.removeFromCart(userId, productId);
-    return ResponseEntity.ok(CartResponse.builder().success(true).message("Sản phẩm đã được xóa").build());
+    List<com.shopcart.entity.CartItem> items = Optional.ofNullable(cartService.getCartByUser(userId)).orElse(List.of());
+    long total = items.stream().mapToLong(i -> i.getPrice() * i.getQuantity()).sum();
+    return ResponseEntity.ok(CartResponse.builder().success(true).message("Sản phẩm đã được xóa").items(items).itemCount(items.size()).cartTotal(total).build());
   }
 
   @PutMapping("/api/cart/update")
@@ -62,6 +67,8 @@ public class CartController {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
     var res = cartService.updateQuantity(request.getUserId(), request.getProductId(), request.getQuantity());
-    return ResponseEntity.ok(CartResponse.builder().success(true).message("Cập nhật số lượng thành công").cartTotal(res == null ? 0L : res.getPrice() * res.getQuantity()).build());
+    List<com.shopcart.entity.CartItem> items = Optional.ofNullable(cartService.getCartByUser(request.getUserId())).orElse(res == null ? List.of() : List.of(res));
+    long total = items.stream().mapToLong(i -> i.getPrice() * i.getQuantity()).sum();
+    return ResponseEntity.ok(CartResponse.builder().success(res != null).message(res == null ? "Sản phẩm không có trong giỏ" : "Cập nhật số lượng thành công").items(items).itemCount(items.size()).cartTotal(total).build());
   }
 }

@@ -134,6 +134,8 @@ class CartServiceTest {
 
     when(cartRepository.findByUserIdAndProductId("user01", "P001"))
         .thenReturn(Optional.of(cartItem));
+    when(productRepository.findById("P001"))
+        .thenReturn(Optional.of(new Product("P001", "Laptop Dell", 15000000L, 10)));
     when(cartRepository.save(any(CartItem.class))).thenAnswer(inv -> inv.getArgument(0));
 
     // Act

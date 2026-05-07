@@ -2,6 +2,7 @@ package com.shopcart.repository;
 
 import com.shopcart.entity.Product;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.stereotype.Repository;
@@ -19,5 +20,10 @@ public class ProductRepositoryImpl implements ProductRepository {
   @Override
   public Optional<Product> findById(String id) {
     return Optional.ofNullable(db.get(id));
+  }
+
+  @Override
+  public List<Product> findAll() {
+    return List.copyOf(db.values());
   }
 }
