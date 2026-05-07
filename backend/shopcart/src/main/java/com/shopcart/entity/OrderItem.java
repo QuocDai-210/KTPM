@@ -1,0 +1,14 @@
+package com.shopcart.entity;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class OrderItem {
+  private String productId;
+  private Integer quantity;
+  private Long price;
+}
