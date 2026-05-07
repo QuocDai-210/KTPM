@@ -35,7 +35,7 @@ describe('Price Calculation Tests', () => {
       expect(result.subtotal).toBe(30500000);
       expect(result.discount).toBe(3050000); // 10%
       expect(result.shipping).toBe(50000);
-      expect(result.total).toBe(27550000);
+      expect(result.total).toBe(27500000);
     });
 
     test('TC3: Áp dụng coupon giảm 20%', () => {
