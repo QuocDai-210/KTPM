@@ -219,6 +219,19 @@ button.active {
   color: var(--accent);
 }
 
+.cart-badge {
+  display: inline-grid;
+  min-width: 22px;
+  height: 22px;
+  margin-left: 8px;
+  place-items: center;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 button:disabled {
   cursor: not-allowed;
   opacity: 0.55;

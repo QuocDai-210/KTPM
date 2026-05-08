@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 // Page Object Model for Checkout
-class CheckoutPage {
+export default class CheckoutPage {
   private page: Page;
 
   constructor(page: Page) {

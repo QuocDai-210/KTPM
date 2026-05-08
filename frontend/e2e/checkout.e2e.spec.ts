@@ -83,6 +83,10 @@ test.describe('Checkout E2E Tests', () => {
 
     // Assert: All elements should be visible
     await expect(subtotalDisplay).toBeVisible();
+    if (await discountDisplay.isVisible()) {
+      const discountText = await discountDisplay.textContent();
+      expect(discountText).toMatch(/[0-9,.]/);
+    }
     
     // Get values (if available)
     if (await shippingDisplay.isVisible()) {
@@ -250,6 +254,11 @@ test.describe('Checkout E2E Tests', () => {
       if (await orderTotal.isVisible()) {
         const totalText = await orderTotal.textContent();
         expect(totalText).toMatch(/[0-9,.]/);
+      }
+
+      if (await orderDate.isVisible()) {
+        const dateText = await orderDate.textContent();
+        expect(dateText).toBeTruthy();
       }
     }
   });

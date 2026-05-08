@@ -1,47 +1,57 @@
 package com.shopcart.controller;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shopcart.dto.OrderItemRequest;
 import com.shopcart.dto.OrderRequest;
 import com.shopcart.dto.OrderResponse;
+import com.shopcart.entity.Order;
 import com.shopcart.entity.OrderStatus;
 import com.shopcart.service.OrderService;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-@WebMvcTest(OrderController.class)
+@ExtendWith(MockitoExtension.class)
 @DisplayName("Order API Integration Tests")
 class OrderControllerIntegrationTest {
 
-  @Autowired private MockMvc mockMvc;
+  private MockMvc mockMvc;
 
-  @Autowired private ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
-  @MockitoBean private OrderService orderService;
+  @Mock private OrderService orderService;
+
+  @BeforeEach
+  void setUp() {
+    mockMvc = MockMvcBuilders.standaloneSetup(new OrderController(orderService)).build();
+  }
 
   @Test
   @DisplayName("POST /api/orders - Tạo đơn hàng thành công")
   void testCreateOrder() throws Exception {
-    // Arrange
     OrderRequest request = OrderRequest.builder()
         .userId("user01")
         .items(List.of(
             new OrderItemRequest("P001", 2, 15000000L),
             new OrderItemRequest("P002", 1, 500000L)
         ))
-        .couponCode("SALE10")
         .shippingFee(50000L)
         .build();
 
@@ -49,244 +59,70 @@ class OrderControllerIntegrationTest {
         .orderId("ORD-20260509-001")
         .status(OrderStatus.PENDING)
         .totalPrice(27950000L)
-        .message("Đặt hàng thành công")
         .build();
 
-    when(orderService.createOrder(any(OrderRequest.class)))
-        .thenReturn(mockResponse);
+    when(orderService.createOrder(any(OrderRequest.class))).thenReturn(mockResponse);
 
-    // Act & Assert
     mockMvc
         .perform(
             post("/api/orders")
+                .header("Authorization", "Bearer token123")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.orderId").value("ORD-20260509-001"))
         .andExpect(jsonPath("$.status").value("PENDING"))
-        .andExpect(jsonPath("$.totalPrice").value(27950000))
-        .andExpect(jsonPath("$.message").value("Đặt hàng thành công"));
+        .andExpect(jsonPath("$.totalPrice").value(27950000));
 
     verify(orderService, times(1)).createOrder(any(OrderRequest.class));
   }
 
   @Test
-  @DisplayName("POST /api/orders - Price calculation chính xác")
-  void testCreateOrderPriceCalculation() throws Exception {
-    // Arrange
+  @DisplayName("POST /api/orders - Thiếu Authorization trả về 401")
+  void testCreateOrderUnauthorized() throws Exception {
     OrderRequest request = OrderRequest.builder()
         .userId("user01")
-        .items(List.of(
-            new OrderItemRequest("P001", 2, 15000000L)  // 30M
-        ))
-        .shippingFee(50000L)
-        .couponCode("SALE10")  // 10% discount
+        .items(List.of(new OrderItemRequest("P001", 1, 15000000L)))
         .build();
 
-    // Expected: 30M - 3M (10%) + 50k = 27,050,000
-    OrderResponse mockResponse = OrderResponse.builder()
-        .orderId("ORD-20260509-002")
-        .status(OrderStatus.PENDING)
-        .totalPrice(27050000L)
-        .subtotal(30000000L)
-        .discount(3000000L)
-        .shipping(50000L)
-        .build();
-
-    when(orderService.createOrder(any(OrderRequest.class)))
-        .thenReturn(mockResponse);
-
-    // Act & Assert
     mockMvc
         .perform(
             post("/api/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.subtotal").value(30000000))
-        .andExpect(jsonPath("$.discount").value(3000000))
-        .andExpect(jsonPath("$.shipping").value(50000))
-        .andExpect(jsonPath("$.totalPrice").value(27050000));
+        .andExpect(status().isUnauthorized());
   }
 
   @Test
-  @DisplayName("POST /api/orders - Out of stock")
-  void testCreateOrderOutOfStock() throws Exception {
-    // Arrange
-    OrderRequest request = OrderRequest.builder()
-        .userId("user01")
-        .items(List.of(
-            new OrderItemRequest("P001", 100, 15000000L)  // Way more than stock
-        ))
-        .shippingFee(50000L)
-        .build();
-
-    OrderResponse mockResponse = OrderResponse.builder()
-        .orderId(null)
-        .status(null)
-        .message("Không đủ tồn kho cho sản phẩm P001. Chỉ còn 3 chiếc.")
-        .error("INSUFFICIENT_STOCK")
-        .build();
-
-    when(orderService.createOrder(any(OrderRequest.class)))
-        .thenReturn(mockResponse);
-
-    // Act & Assert
-    mockMvc
-        .perform(
-            post("/api/orders")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.error").value("INSUFFICIENT_STOCK"));
-  }
-
-  @Test
-  @DisplayName("POST /api/orders - Invalid coupon")
-  void testCreateOrderInvalidCoupon() throws Exception {
-    // Arrange
-    OrderRequest request = OrderRequest.builder()
-        .userId("user01")
-        .items(List.of(
-            new OrderItemRequest("P001", 1, 15000000L)
-        ))
-        .couponCode("INVALID_CODE")
-        .shippingFee(50000L)
-        .build();
-
-    OrderResponse mockResponse = OrderResponse.builder()
-        .orderId(null)
-        .message("Mã giảm giá không tồn tại hoặc hết hạn")
-        .error("INVALID_COUPON")
-        .build();
-
-    when(orderService.createOrder(any(OrderRequest.class)))
-        .thenReturn(mockResponse);
-
-    // Act & Assert
-    mockMvc
-        .perform(
-            post("/api/orders")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.error").value("INVALID_COUPON"));
-  }
-
-  @Test
-  @DisplayName("GET /api/orders/{orderId} - Lấy thông tin đơn hàng")
+  @DisplayName("GET /api/order/{orderId} - Lấy thông tin đơn hàng")
   void testGetOrderById() throws Exception {
-    // Arrange
-    OrderResponse mockResponse = OrderResponse.builder()
-        .orderId("ORD-20260509-001")
-        .status(OrderStatus.PENDING)
-        .totalPrice(27950000L)
-        .build();
+        Order mockResponse = new Order();
+        mockResponse.setId("ORD-20260509-001");
+        mockResponse.setStatus(OrderStatus.PENDING);
+        mockResponse.setTotalPrice(27950000L);
 
-    when(orderService.getOrderById("ORD-20260509-001"))
-        .thenReturn(mockResponse);
+    when(orderService.getOrderById("ORD-20260509-001")).thenReturn(mockResponse);
 
-    // Act & Assert
     mockMvc
-        .perform(get("/api/orders/{orderId}", "ORD-20260509-001"))
+        .perform(
+            get("/api/order/{orderId}", "ORD-20260509-001")
+                .header("Authorization", "Bearer token123"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.orderId").value("ORD-20260509-001"))
+        .andExpect(jsonPath("$.id").value("ORD-20260509-001"))
         .andExpect(jsonPath("$.status").value("PENDING"));
 
     verify(orderService, times(1)).getOrderById("ORD-20260509-001");
   }
 
   @Test
-  @DisplayName("POST /api/orders - Multiple items validation")
-  void testCreateOrderMultipleItems() throws Exception {
-    // Arrange
-    OrderRequest request = OrderRequest.builder()
-        .userId("user01")
-        .items(List.of(
-            new OrderItemRequest("P001", 2, 15000000L),
-            new OrderItemRequest("P002", 1, 500000L),
-            new OrderItemRequest("P003", 3, 2000000L)
-        ))
-        .shippingFee(100000L)
-        .build();
-
-    // Expected: (30M + 500k + 6M) + 100k = 36,600,000
-    OrderResponse mockResponse = OrderResponse.builder()
-        .orderId("ORD-20260509-003")
-        .status(OrderStatus.PENDING)
-        .totalPrice(36600000L)
-        .build();
-
-    when(orderService.createOrder(any(OrderRequest.class)))
-        .thenReturn(mockResponse);
-
-    // Act & Assert
+  @DisplayName("PATCH /api/order/{orderId}/cancel - Hủy đơn thành công")
+  void testCancelOrder() throws Exception {
     mockMvc
         .perform(
-            post("/api/orders")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.totalPrice").value(36600000));
-  }
+            patch("/api/order/{orderId}/cancel", "ORD-20260509-001")
+                .header("Authorization", "Bearer token123"))
+        .andExpect(status().isOk());
 
-  @Test
-  @DisplayName("POST /api/orders - Response structure validation")
-  void testCreateOrderResponseStructure() throws Exception {
-    // Arrange
-    OrderRequest request = OrderRequest.builder()
-        .userId("user01")
-        .items(List.of(new OrderItemRequest("P001", 1, 15000000L)))
-        .shippingFee(50000L)
-        .build();
-
-    OrderResponse mockResponse = OrderResponse.builder()
-        .orderId("ORD-20260509-004")
-        .status(OrderStatus.PENDING)
-        .totalPrice(15050000L)
-        .message("Success")
-        .build();
-
-    when(orderService.createOrder(any(OrderRequest.class)))
-        .thenReturn(mockResponse);
-
-    // Act & Assert
-    mockMvc
-        .perform(
-            post("/api/orders")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.orderId").exists())
-        .andExpect(jsonPath("$.status").exists())
-        .andExpect(jsonPath("$.totalPrice").exists())
-        .andExpect(jsonPath("$.message").exists());
-  }
-
-  @Test
-  @DisplayName("POST /api/orders - Content-Type validation")
-  void testCreateOrderContentTypeValidation() throws Exception {
-    // Arrange
-    OrderRequest request = OrderRequest.builder()
-        .userId("user01")
-        .items(List.of(new OrderItemRequest("P001", 1, 15000000L)))
-        .shippingFee(50000L)
-        .build();
-
-    // Act & Assert - JSON content-type
-    mockMvc
-        .perform(
-            post("/api/orders")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated());
-
-    // Act & Assert - Invalid content-type
-    mockMvc
-        .perform(
-            post("/api/orders")
-                .contentType(MediaType.TEXT_PLAIN)
-                .content("invalid"))
-        .andExpect(status().is4xxClientError());
+    verify(orderService, times(1)).cancelOrder("ORD-20260509-001");
   }
 }

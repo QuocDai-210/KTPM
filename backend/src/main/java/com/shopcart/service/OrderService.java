@@ -31,6 +31,9 @@ public class OrderService {
     if (request.getItems() == null || request.getItems().isEmpty()) {
       throw new IllegalArgumentException("Đơn hàng phải có ít nhất một sản phẩm");
     }
+    if (request.getShippingFee() != null && request.getShippingFee() < 0) {
+      throw new IllegalArgumentException("Phí vận chuyển không được âm");
+    }
     // Check inventory
     for (OrderItemRequest it : request.getItems()) {
       if (it.getQuantity() == null || it.getQuantity() < 1) {
@@ -68,6 +71,12 @@ public class OrderService {
   }
 
   public Long calculateOrderTotal(OrderRequest request) {
+    if (request.getItems() == null || request.getItems().isEmpty()) {
+      throw new IllegalArgumentException("Đơn hàng phải có ít nhất một sản phẩm");
+    }
+    if (request.getShippingFee() != null && request.getShippingFee() < 0) {
+      throw new IllegalArgumentException("Phí vận chuyển không được âm");
+    }
     long subtotal = 0L;
     for (OrderItemRequest it : request.getItems()) {
       long catalogPrice = productRepository.findById(it.getProductId())
@@ -77,21 +86,23 @@ public class OrderService {
     }
 
     long discount = 0L;
-    if (request.getCouponCode() != null) {
-      Optional<Coupon> couponOpt = orderRepository.findCoupon(request.getCouponCode());
-      if (couponOpt.isPresent()) {
-        Coupon c = couponOpt.get();
-        if (c.getExpiryDate() != null && java.time.LocalDate.now().isAfter(java.time.LocalDate.parse(c.getExpiryDate()))) {
-          throw new IllegalArgumentException("Mã giảm giá đã hết hạn");
-        }
-        if (c.getMinOrderValue() != null && subtotal < c.getMinOrderValue()) {
-          throw new IllegalArgumentException("Đơn hàng chưa đạt giá trị tối thiểu cho mã giảm giá");
-        }
-        if ("PERCENT".equals(c.getDiscountType())) {
-          discount = (long) (subtotal * (c.getDiscountValue() / 100.0));
-        } else if ("FIXED".equals(c.getDiscountType())) {
-          discount = c.getDiscountValue();
-        }
+    String couponCode = request.getCouponCode() == null ? null : request.getCouponCode().trim();
+    if (couponCode != null && !couponCode.isBlank()) {
+      Optional<Coupon> couponOpt = orderRepository.findCoupon(couponCode);
+      if (couponOpt.isEmpty()) {
+        throw new IllegalArgumentException("Mã giảm giá không tồn tại");
+      }
+      Coupon c = couponOpt.get();
+      if (c.getExpiryDate() != null && java.time.LocalDate.now().isAfter(java.time.LocalDate.parse(c.getExpiryDate()))) {
+        throw new IllegalArgumentException("Mã giảm giá đã hết hạn");
+      }
+      if (c.getMinOrderValue() != null && subtotal < c.getMinOrderValue()) {
+        throw new IllegalArgumentException("Đơn hàng chưa đạt giá trị tối thiểu cho mã giảm giá");
+      }
+      if ("PERCENT".equals(c.getDiscountType())) {
+        discount = (long) (subtotal * (c.getDiscountValue() / 100.0));
+      } else if ("FIXED".equals(c.getDiscountType()) || "FIXED_AMOUNT".equals(c.getDiscountType())) {
+        discount = c.getDiscountValue();
       }
     } else if (request.getCouponCode() == null) {
       // No coupon

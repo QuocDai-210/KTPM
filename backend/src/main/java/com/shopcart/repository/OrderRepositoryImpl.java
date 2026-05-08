@@ -18,7 +18,9 @@ public class OrderRepositoryImpl implements OrderRepository {
     coupons.put("SALE10", new Coupon("SALE10", "PERCENT", 10L, 0L, "2026-12-31"));
     coupons.put("SALE20", new Coupon("SALE20", "PERCENT", 20L, 0L, "2026-12-31"));
     coupons.put("FIXED100K", new Coupon("FIXED100K", "FIXED", 100000L, 0L, "2026-12-31"));
+    coupons.put("SAVE500", new Coupon("SAVE500", "FIXED", 500000L, 0L, "2026-12-31"));
     coupons.put("EXPIRED2023", new Coupon("EXPIRED2023", "PERCENT", 10L, 0L, "2023-12-31"));
+    coupons.put("EXPIRED2024", new Coupon("EXPIRED2024", "PERCENT", 10L, 0L, "2024-04-30"));
   }
 
   @Override

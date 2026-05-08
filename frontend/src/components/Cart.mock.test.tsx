@@ -1,6 +1,6 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import CartComponent from './CartComponent';
+import App from '../App';
 import * as cartService from '../services/cartService';
 
 vi.mock('../services/cartService');
@@ -8,6 +8,22 @@ vi.mock('../services/cartService');
 describe('Cart Mock Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.history.replaceState(null, '', '/');
+    vi.mocked(cartService.getProducts).mockResolvedValue([
+      { id: 'P001', name: 'Laptop Dell', price: 15000000, stock: 10 },
+    ]);
+    vi.mocked(cartService.getCart).mockResolvedValue({
+      items: [
+        {
+          productId: 'P001',
+          productName: 'Laptop Dell',
+          quantity: 2,
+          price: 15000000,
+        },
+      ],
+      cartTotal: 30000000,
+      itemCount: 2,
+    });
   });
 
   describe('Mock: Add to Cart Success', () => {
@@ -23,21 +39,18 @@ describe('Cart Mock Tests', () => {
       vi.mocked(cartService.addToCart).mockResolvedValue(mockResponse);
 
       // Act
-      render(<CartComponent userId="user01" />);
+      render(<App />);
 
       // Simulate user input
-      const quantityInput = screen.getByTestId('quantity-input');
-      const addButton = screen.getByTestId('add-to-cart-btn');
+      const quantityInput = await screen.findByTestId('quantity-input-P001');
+      const addButton = screen.getByTestId('add-to-cart-P001');
 
       fireEvent.change(quantityInput, { target: { value: '2' } });
       fireEvent.click(addButton);
 
       // Assert
       await waitFor(() => {
-        expect(cartService.addToCart).toHaveBeenCalledWith('user01', expect.objectContaining({
-          productId: expect.any(String),
-          quantity: 2,
-        }));
+        expect(cartService.addToCart).toHaveBeenCalledWith('user01', 'P001', 2);
         expect(screen.getByText(/thành công/i)).toBeInTheDocument();
       });
     });
@@ -55,17 +68,18 @@ describe('Cart Mock Tests', () => {
       vi.mocked(cartService.addToCart).mockRejectedValue(mockError);
 
       // Act
-      render(<CartComponent userId="user01" />);
+      render(<App />);
 
-      const quantityInput = screen.getByTestId('quantity-input');
-      const addButton = screen.getByTestId('add-to-cart-btn');
+      const quantityInput = await screen.findByTestId('quantity-input-P001');
+      const addButton = screen.getByTestId('add-to-cart-P001');
 
       fireEvent.change(quantityInput, { target: { value: '50' } });
       fireEvent.click(addButton);
 
       // Assert
       await waitFor(() => {
-        expect(screen.getByText(/vượt quá tồn kho/i)).toBeInTheDocument();
+        expect(screen.getByText(/chỉ còn 10 sản phẩm/i)).toBeInTheDocument();
+        expect(cartService.addToCart).not.toHaveBeenCalled();
       });
     });
   });
@@ -79,12 +93,16 @@ describe('Cart Mock Tests', () => {
         cartCount: 1,
       });
 
-      render(<CartComponent userId="user01" />);
+      render(<App />);
 
-      const addButton = screen.getByTestId('add-to-cart-btn');
+      const addButton = await screen.findByTestId('add-to-cart-P001');
 
       fireEvent.click(addButton);
-      fireEvent.click(addButton);
+      await waitFor(() => expect(cartService.addToCart).toHaveBeenCalledTimes(1));
+      await screen.findByText('Laptop Dell');
+      fireEvent.click(screen.getByRole('button', { name: 'Sản phẩm' }));
+      const secondAddButton = await screen.findByTestId('add-to-cart-P001');
+      fireEvent.click(secondAddButton);
 
       await waitFor(() => {
         expect(cartService.addToCart).toHaveBeenCalledTimes(2);
@@ -101,18 +119,16 @@ describe('Cart Mock Tests', () => {
         cartCount: 1,
       });
 
-      render(<CartComponent userId="user01" />);
+      render(<App />);
 
-      const addButton = screen.getByTestId('add-to-cart-btn');
+      const addButton = await screen.findByTestId('add-to-cart-P001');
       fireEvent.click(addButton);
 
       await waitFor(() => {
         expect(cartService.addToCart).toHaveBeenCalledWith(
           'user01',
-          expect.objectContaining({
-            productId: expect.any(String),
-            quantity: expect.any(Number),
-          })
+          'P001',
+          1,
         );
       });
     });
@@ -127,9 +143,9 @@ describe('Cart Mock Tests', () => {
         cartCount: 2,
       });
 
-      render(<CartComponent userId="user01" />);
+      render(<App />);
 
-      const addButton = screen.getByTestId('add-to-cart-btn');
+      const addButton = await screen.findByTestId('add-to-cart-P001');
       fireEvent.click(addButton);
 
       await waitFor(() => {

@@ -22,6 +22,9 @@ public class CartService {
   }
 
   public CartItem addToCart(String userId, CartItemRequest request) {
+    if (request.getProductId() == null || request.getProductId().isBlank()) {
+      throw new IllegalArgumentException("Product ID không được rỗng");
+    }
     if (request.getQuantity() == null || request.getQuantity() < 1) {
       throw new IllegalArgumentException("Số lượng phải lớn hơn 0");
     }
@@ -32,6 +35,9 @@ public class CartService {
     }
 
     Product p = pOpt.get();
+    if (!"ACTIVE".equalsIgnoreCase(p.getStatus())) {
+      throw new IllegalArgumentException("Sản phẩm không còn được bán");
+    }
     Optional<CartItem> existing = cartRepository.findByUserIdAndProductId(userId, request.getProductId());
     int currentQuantity = existing.map(CartItem::getQuantity).orElse(0);
     int nextQuantity = currentQuantity + request.getQuantity();
@@ -64,6 +70,9 @@ public class CartService {
       return null;
     }
     Product product = productRepository.findById(productId).orElseThrow(() -> new ProductNotFoundException("Sản phẩm không tồn tại"));
+    if (!"ACTIVE".equalsIgnoreCase(product.getStatus())) {
+      throw new IllegalArgumentException("Sản phẩm không còn được bán");
+    }
     if (quantity > product.getStock()) {
       throw new InsufficientStockException("Tồn kho không đủ");
     }

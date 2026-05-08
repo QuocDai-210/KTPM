@@ -24,6 +24,7 @@ public class InventoryServiceImpl implements InventoryService {
     var product = productRepository.findById(productId);
     if (product.isPresent()) {
       product.get().setStock(product.get().getStock() - quantity);
+      productRepository.save(product.get());
     }
   }
 
@@ -32,6 +33,7 @@ public class InventoryServiceImpl implements InventoryService {
     var product = productRepository.findById(productId);
     if (product.isPresent()) {
       product.get().setStock(product.get().getStock() + quantity);
+      productRepository.save(product.get());
     }
   }
 }

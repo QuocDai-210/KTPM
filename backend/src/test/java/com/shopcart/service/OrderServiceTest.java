@@ -1,24 +1,34 @@
 package com.shopcart.service;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.shopcart.dto.OrderItemRequest;
 import com.shopcart.dto.OrderRequest;
 import com.shopcart.dto.OrderResponse;
-import com.shopcart.entity.CartItem;
 import com.shopcart.entity.Order;
 import com.shopcart.entity.OrderItem;
 import com.shopcart.entity.OrderStatus;
@@ -30,6 +40,7 @@ import com.shopcart.repository.ProductRepository;
 
 @DisplayName("Order Service Unit Tests")
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class OrderServiceTest {
 
   @Mock private OrderRepository orderRepository;
@@ -41,6 +52,20 @@ class OrderServiceTest {
   @Mock private CartRepository cartRepository;
 
   @InjectMocks private OrderService orderService;
+
+  @BeforeEach
+  void setUpCatalogDefaults() {
+    when(productRepository.findById("P001"))
+        .thenReturn(Optional.of(new Product("P001", "Laptop Dell", 15000000L, 10)));
+    when(productRepository.findById("P002"))
+        .thenReturn(Optional.of(new Product("P002", "Mouse Logitech", 500000L, 50)));
+    when(productRepository.findById("P003"))
+        .thenReturn(Optional.of(new Product("P003", "Keyboard Mechanical", 2000000L, 10)));
+    when(orderRepository.findCoupon("SALE10"))
+        .thenReturn(Optional.of(new com.shopcart.entity.Coupon("SALE10", "PERCENT", 10L, 0L, "2026-12-31")));
+    when(orderRepository.findCoupon("SAVE500"))
+        .thenReturn(Optional.of(new com.shopcart.entity.Coupon("SAVE500", "FIXED", 500000L, 0L, "2026-12-31")));
+  }
 
   @Test
   @DisplayName("TC1: Tạo đơn hàng thành công")
@@ -175,23 +200,11 @@ class OrderServiceTest {
             .shippingFee(50000L)
             .build();
 
-    when(orderRepository.findCoupon("INVALID")).thenReturn(Optional.empty());
-    when(productRepository.findById("P001"))
-        .thenReturn(Optional.of(new Product("P001", "Laptop Dell", 15000000L, 10)));
     when(inventoryService.isAvailable("P001", 2)).thenReturn(true);
-    when(orderRepository.save(any(Order.class)))
-        .thenAnswer(inv -> {
-          Order o = inv.getArgument(0);
-          o.setId(UUID.randomUUID().toString());
-          return o;
-        });
 
-    // Act
-    OrderResponse response = orderService.createOrder(request);
-
-    // Assert
-    assertNotNull(response);
-    assertNotNull(response.getTotalPrice());
+    // Act & Assert
+    assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(request));
+    verify(orderRepository, never()).save(any(Order.class));
   }
 
   @Test

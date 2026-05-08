@@ -37,7 +37,8 @@ public class CartController {
     var resp = cartService.addToCart("user01", request);
     List<com.shopcart.entity.CartItem> items = Optional.ofNullable(cartService.getCartByUser("user01")).orElse(List.of(resp));
     long total = items.stream().mapToLong(i -> i.getPrice() * i.getQuantity()).sum();
-    return ResponseEntity.ok(CartResponse.builder().success(true).message("Thêm vào giỏ hàng thành công").items(items).itemCount(items.size()).cartTotal(total).build());
+    int itemCount = items.stream().mapToInt(com.shopcart.entity.CartItem::getQuantity).sum();
+    return ResponseEntity.ok(CartResponse.builder().success(true).message("Thêm vào giỏ hàng thành công").items(items).itemCount(itemCount).cartTotal(total).build());
   }
 
   @GetMapping("/api/cart/{userId}")
@@ -47,7 +48,8 @@ public class CartController {
     }
     List<com.shopcart.entity.CartItem> items = Optional.ofNullable(cartService.getCartByUser(userId)).orElse(List.of());
     long total = items.stream().mapToLong(i -> i.getPrice() * i.getQuantity()).sum();
-    return ResponseEntity.ok(CartResponse.builder().success(true).items(items).itemCount(items.size()).cartTotal(total).build());
+    int itemCount = items.stream().mapToInt(com.shopcart.entity.CartItem::getQuantity).sum();
+    return ResponseEntity.ok(CartResponse.builder().success(true).items(items).itemCount(itemCount).cartTotal(total).build());
   }
 
   @DeleteMapping("/api/cart/{userId}/{productId}")
@@ -58,7 +60,8 @@ public class CartController {
     cartService.removeFromCart(userId, productId);
     List<com.shopcart.entity.CartItem> items = Optional.ofNullable(cartService.getCartByUser(userId)).orElse(List.of());
     long total = items.stream().mapToLong(i -> i.getPrice() * i.getQuantity()).sum();
-    return ResponseEntity.ok(CartResponse.builder().success(true).message("Sản phẩm đã được xóa").items(items).itemCount(items.size()).cartTotal(total).build());
+    int itemCount = items.stream().mapToInt(com.shopcart.entity.CartItem::getQuantity).sum();
+    return ResponseEntity.ok(CartResponse.builder().success(true).message("Sản phẩm đã được xóa").items(items).itemCount(itemCount).cartTotal(total).build());
   }
 
   @PutMapping("/api/cart/update")
@@ -69,6 +72,7 @@ public class CartController {
     var res = cartService.updateQuantity(request.getUserId(), request.getProductId(), request.getQuantity());
     List<com.shopcart.entity.CartItem> items = Optional.ofNullable(cartService.getCartByUser(request.getUserId())).orElse(res == null ? List.of() : List.of(res));
     long total = items.stream().mapToLong(i -> i.getPrice() * i.getQuantity()).sum();
-    return ResponseEntity.ok(CartResponse.builder().success(res != null).message(res == null ? "Sản phẩm không có trong giỏ" : "Cập nhật số lượng thành công").items(items).itemCount(items.size()).cartTotal(total).build());
+    int itemCount = items.stream().mapToInt(com.shopcart.entity.CartItem::getQuantity).sum();
+    return ResponseEntity.ok(CartResponse.builder().success(res != null).message(res == null ? "Sản phẩm không có trong giỏ" : "Cập nhật số lượng thành công").items(items).itemCount(itemCount).cartTotal(total).build());
   }
 }
