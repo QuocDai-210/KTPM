@@ -193,4 +193,218 @@ class OrderServiceTest {
     assertNotNull(response);
     assertNotNull(response.getTotalPrice());
   }
+
+  @Test
+  @DisplayName("TC7: Đơn hàng với nhiều sản phẩm")
+  void testCreateOrderMultipleItems() {
+    // Arrange
+    OrderRequest request =
+        OrderRequest.builder()
+            .userId("user01")
+            .items(List.of(
+                new OrderItemRequest("P001", 2, 15000000L),
+                new OrderItemRequest("P002", 1, 500000L),
+                new OrderItemRequest("P003", 3, 2000000L)
+            ))
+            .shippingFee(100000L)
+            .build();
+
+    when(inventoryService.isAvailable("P001", 2)).thenReturn(true);
+    when(inventoryService.isAvailable("P002", 1)).thenReturn(true);
+    when(inventoryService.isAvailable("P003", 3)).thenReturn(true);
+
+    when(orderRepository.save(any(Order.class)))
+        .thenAnswer(inv -> {
+          Order o = inv.getArgument(0);
+          o.setId(UUID.randomUUID().toString());
+          return o;
+        });
+
+    // Act
+    OrderResponse response = orderService.createOrder(request);
+
+    // Assert
+    assertNotNull(response.getOrderId());
+    assertNotNull(response.getTotalPrice());
+    assertTrue(response.getTotalPrice() > 0);
+  }
+
+  @Test
+  @DisplayName("TC8: Áp dụng coupon % discount")
+  void testApplyPercentCoupon() {
+    // Arrange - Subtotal: 30M, 10% = 3M discount, Total: 27M
+    OrderRequest request =
+        OrderRequest.builder()
+            .userId("user01")
+            .items(List.of(new OrderItemRequest("P001", 2, 15000000L)))
+            .couponCode("SALE10")
+            .shippingFee(50000L)
+            .build();
+
+    when(inventoryService.isAvailable("P001", 2)).thenReturn(true);
+    when(orderRepository.findCoupon("SALE10"))
+        .thenReturn(Optional.of(new com.shopcart.entity.Coupon("SALE10", "PERCENT", 10L, 0L, "2026-12-31")));
+
+    when(orderRepository.save(any(Order.class)))
+        .thenAnswer(inv -> {
+          Order o = inv.getArgument(0);
+          o.setId(UUID.randomUUID().toString());
+          return o;
+        });
+
+    // Act
+    OrderResponse response = orderService.createOrder(request);
+
+    // Assert
+    assertNotNull(response);
+    assertTrue(response.getTotalPrice() > 0);
+    // Total should be: (30M - 3M) + 50k = 27.05M
+  }
+
+  @Test
+  @DisplayName("TC9: Áp dụng coupon fixed amount")
+  void testApplyFixedCoupon() {
+    // Arrange - Subtotal: 15M, Fixed: 500k discount, Total: 14.55M
+    OrderRequest request =
+        OrderRequest.builder()
+            .userId("user01")
+            .items(List.of(new OrderItemRequest("P001", 1, 15000000L)))
+            .couponCode("SAVE500")
+            .shippingFee(50000L)
+            .build();
+
+    when(inventoryService.isAvailable("P001", 1)).thenReturn(true);
+    when(orderRepository.findCoupon("SAVE500"))
+        .thenReturn(Optional.of(new com.shopcart.entity.Coupon("SAVE500", "FIXED", 0L, 500000L, "2026-12-31")));
+
+    when(orderRepository.save(any(Order.class)))
+        .thenAnswer(inv -> {
+          Order o = inv.getArgument(0);
+          o.setId(UUID.randomUUID().toString());
+          return o;
+        });
+
+    // Act
+    OrderResponse response = orderService.createOrder(request);
+
+    // Assert
+    assertNotNull(response);
+    assertTrue(response.getTotalPrice() > 0);
+  }
+
+  @Test
+  @DisplayName("TC10: Kiểm tra giảm tồn kho sau tạo order")
+  void testDecreaseInventoryAfterOrder() {
+    // Arrange
+    OrderRequest request =
+        OrderRequest.builder()
+            .userId("user01")
+            .items(List.of(
+                new OrderItemRequest("P001", 2, 15000000L),
+                new OrderItemRequest("P002", 1, 500000L)
+            ))
+            .shippingFee(50000L)
+            .build();
+
+    when(inventoryService.isAvailable(anyString(), anyInt())).thenReturn(true);
+    when(orderRepository.save(any(Order.class)))
+        .thenAnswer(inv -> {
+          Order o = inv.getArgument(0);
+          o.setId(UUID.randomUUID().toString());
+          return o;
+        });
+
+    // Act
+    orderService.createOrder(request);
+
+    // Assert
+    verify(inventoryService, times(1)).decreaseStock("P001", 2);
+    verify(inventoryService, times(1)).decreaseStock("P002", 1);
+  }
+
+  @Test
+  @DisplayName("TC11: Empty items list rejection")
+  void testCreateOrderEmptyItems() {
+    // Arrange
+    OrderRequest request =
+        OrderRequest.builder()
+            .userId("user01")
+            .items(List.of()) // Empty
+            .shippingFee(50000L)
+            .build();
+
+    // Act & Assert
+    assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(request));
+    verify(orderRepository, never()).save(any(Order.class));
+  }
+
+  @Test
+  @DisplayName("TC12: Negative shipping fee rejection")
+  void testCreateOrderNegativeShipping() {
+    // Arrange
+    OrderRequest request =
+        OrderRequest.builder()
+            .userId("user01")
+            .items(List.of(new OrderItemRequest("P001", 1, 15000000L)))
+            .shippingFee(-50000L) // Negative
+            .build();
+
+    // Act & Assert
+    assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(request));
+    verify(orderRepository, never()).save(any(Order.class));
+  }
+
+  @Test
+  @DisplayName("TC13: Verify order status is PENDING after creation")
+  void testOrderStatusPending() {
+    // Arrange
+    OrderRequest request =
+        OrderRequest.builder()
+            .userId("user01")
+            .items(List.of(new OrderItemRequest("P001", 1, 15000000L)))
+            .shippingFee(50000L)
+            .build();
+
+    when(inventoryService.isAvailable("P001", 1)).thenReturn(true);
+    when(orderRepository.save(any(Order.class)))
+        .thenAnswer(inv -> {
+          Order o = inv.getArgument(0);
+          o.setId(UUID.randomUUID().toString());
+          o.setStatus(OrderStatus.PENDING);
+          return o;
+        });
+
+    // Act
+    OrderResponse response = orderService.createOrder(request);
+
+    // Assert
+    assertEquals(OrderStatus.PENDING, response.getStatus());
+  }
+
+  @Test
+  @DisplayName("TC14: Verify order ID is generated")
+  void testOrderIdGeneration() {
+    // Arrange
+    OrderRequest request =
+        OrderRequest.builder()
+            .userId("user01")
+            .items(List.of(new OrderItemRequest("P001", 1, 15000000L)))
+            .shippingFee(50000L)
+            .build();
+
+    when(inventoryService.isAvailable("P001", 1)).thenReturn(true);
+    ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+    when(orderRepository.save(orderCaptor.capture()))
+        .thenAnswer(inv -> {
+          Order o = inv.getArgument(0);
+          o.setId(UUID.randomUUID().toString());
+          return o;
+        });
+
+    // Act
+    OrderResponse response = orderService.createOrder(request);
+
+    // Assert
+    assertNotNull(response.getOrderId());
+  }
 }

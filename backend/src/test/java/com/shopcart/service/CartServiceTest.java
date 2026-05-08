@@ -159,4 +159,105 @@ class CartServiceTest {
     // Assert
     verify(cartRepository, times(1)).findByUserId(userId);
   }
+
+  @Test
+  @DisplayName("TC8: Cập nhật số lượng vượt quá tồn kho")
+  void testUpdateQuantityExceedStock() {
+    // Arrange
+    CartItem cartItem = new CartItem("P001", 2, "Laptop Dell", 15000000L);
+
+    when(cartRepository.findByUserIdAndProductId("user01", "P001"))
+        .thenReturn(Optional.of(cartItem));
+    when(productRepository.findById("P001"))
+        .thenReturn(Optional.of(new Product("P001", "Laptop Dell", 15000000L, 5)));
+
+    // Act & Assert
+    assertThrows(
+        InsufficientStockException.class,
+        () -> cartService.updateQuantity("user01", "P001", 10));
+    verify(cartRepository, never()).save(any(CartItem.class));
+  }
+
+  @Test
+  @DisplayName("TC9: Xóa sản phẩm không tồn tại trong giỏ")
+  void testRemoveNonExistentProduct() {
+    // Arrange
+    String userId = "user01";
+    String productId = "INVALID";
+
+    when(cartRepository.findByUserIdAndProductId(userId, productId))
+        .thenReturn(Optional.empty());
+
+    // Act & Assert
+    assertThrows(
+        Exception.class,
+        () -> cartService.removeFromCart(userId, productId));
+  }
+
+  @Test
+  @DisplayName("TC10: Quantity validation - Zero quantity")
+  void testAddToCartZeroQuantity() {
+    // Arrange
+    CartItemRequest request = new CartItemRequest("P001", 0);
+
+    // Act & Assert
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> cartService.addToCart("user01", request));
+  }
+
+  @Test
+  @DisplayName("TC11: Quantity validation - Negative quantity")
+  void testAddToCartNegativeQuantity() {
+    // Arrange
+    CartItemRequest request = new CartItemRequest("P001", -5);
+
+    // Act & Assert
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> cartService.addToCart("user01", request));
+  }
+
+  @Test
+  @DisplayName("TC12: Clear entire cart")
+  void testClearCart() {
+    // Arrange
+    String userId = "user01";
+
+    // Act
+    cartService.clearCart(userId);
+
+    // Assert
+    verify(cartRepository, times(1)).deleteByUserId(userId);
+  }
+
+  @Test
+  @DisplayName("TC13: Calculate cart total price")
+  void testCalculateCartTotal() {
+    // Arrange
+    CartItem item1 = new CartItem("P001", 2, "Laptop", 15000000L);
+    CartItem item2 = new CartItem("P002", 1, "Mouse", 500000L);
+    java.util.List<CartItem> items = java.util.List.of(item1, item2);
+
+    // Act
+    Long total = cartService.calculateCartTotal(items);
+
+    // Assert
+    assertEquals(30500000L, total); // (15M * 2) + (500k * 1)
+  }
+
+  @Test
+  @DisplayName("TC14: Get cart count")
+  void testGetCartCount() {
+    // Arrange
+    CartItem item1 = new CartItem("P001", 2, "Laptop", 15000000L);
+    CartItem item2 = new CartItem("P002", 1, "Mouse", 500000L);
+    java.util.List<CartItem> items = java.util.List.of(item1, item2);
+
+    // Act
+    int count = cartService.getCartItemCount(items);
+
+    // Assert
+    assertEquals(3, count); // 2 + 1
+  }
 }
