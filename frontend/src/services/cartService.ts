@@ -4,8 +4,31 @@ const authHeaders = {
   Authorization: 'Bearer token123',
 };
 
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  stock: number;
+}
+
+export interface CartItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  price: number;
+}
+
 export async function getProducts() {
   const resp = await axios.get('/api/products', { headers: authHeaders });
+  return resp.data as Product[];
+}
+
+export async function addToCart(userId: string, productId: string, quantity: number) {
+  const resp = await axios.post(
+    '/api/cart/add',
+    { userId, productId, quantity },
+    { headers: authHeaders },
+  );
   return resp.data;
 }
 

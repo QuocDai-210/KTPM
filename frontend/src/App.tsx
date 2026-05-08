@@ -1,47 +1,43 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import CartComponent from './components/CartComponent'
 import ProductsComponent from './components/ProductsComponent'
+import * as cartService from './services/cartService'
 import './App.css'
 
 function App() {
-  const [page, setPage] = useState<'cart' | 'products'>('products')
+  const pathPage = window.location.pathname.includes('cart') || window.location.pathname.includes('checkout') ? 'cart' : 'products'
+  const [page, setPage] = useState<'cart' | 'products'>(pathPage)
+  const [notice, setNotice] = useState<string | null>(null)
   const userId = 'user01'
+
+  useEffect(() => {
+    window.history.replaceState(null, '', page === 'cart' ? '/cart' : '/')
+  }, [page])
 
   const handleAddToCart = async (productId: string, quantity: number) => {
     try {
-      const response = await fetch('/api/cart/add', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer token123',
-        },
-        body: JSON.stringify({
-          userId,
-          productId,
-          quantity,
-        }),
-      });
-      if (response.ok) {
-        alert('Thêm vào giỏ hàng thành công');
-        setPage('cart');
-      }
+      await cartService.addToCart(userId, productId, quantity)
+      setNotice('Thêm vào giỏ hàng thành công')
+      setPage('cart')
     } catch (error) {
-      console.error('Error adding to cart:', error);
+      setNotice('Không thể thêm sản phẩm vào giỏ')
+      console.error('Error adding to cart:', error)
     }
   }
 
   return (
     <div id="app-shell">
-      <nav style={{ padding: '1rem', borderBottom: '1px solid #ccc' }}>
-        <button onClick={() => setPage('products')} style={{ marginRight: '1rem' }}>
-          Products
+      <nav className="topbar" aria-label="ShopCart navigation">
+        <button className={page === 'products' ? 'active' : ''} onClick={() => setPage('products')}>
+          Sản phẩm
         </button>
-        <button onClick={() => setPage('cart')}>
-          Cart
+        <button className={page === 'cart' ? 'active' : ''} onClick={() => setPage('cart')}>
+          Giỏ hàng
         </button>
       </nav>
 
-      <main style={{ padding: '2rem' }}>
+      <main className="app-main">
+        {notice && <div className="notice">{notice}</div>}
         {page === 'products' && (
           <ProductsComponent userId={userId} onAddToCart={handleAddToCart} />
         )}

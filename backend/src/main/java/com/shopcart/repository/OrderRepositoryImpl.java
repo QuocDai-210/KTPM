@@ -5,12 +5,14 @@ import com.shopcart.entity.Order;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class OrderRepositoryImpl implements OrderRepository {
   private static final Map<String, Order> orders = new HashMap<>();
   private static final Map<String, Coupon> coupons = new HashMap<>();
+  private static final AtomicInteger sequence = new AtomicInteger(1000);
 
   static {
     coupons.put("SALE10", new Coupon("SALE10", "PERCENT", 10L, 0L, "2026-12-31"));
@@ -21,6 +23,9 @@ public class OrderRepositoryImpl implements OrderRepository {
 
   @Override
   public Order save(Order order) {
+    if (order.getId() == null || order.getId().isBlank()) {
+      order.setId("ORD-" + sequence.incrementAndGet());
+    }
     orders.put(order.getId(), order);
     return order;
   }

@@ -1,19 +1,12 @@
 import { useState, useEffect } from 'react';
 import * as cartService from '../services/cartService';
 
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  stock: number;
-}
-
 interface ProductsComponentProps {
   userId: string;
   onAddToCart?: (productId: string, quantity: number) => void;
 }
 
-const fallbackProducts: Product[] = [
+const fallbackProducts: cartService.Product[] = [
   { id: 'P001', name: 'Laptop Dell XPS 13', price: 15000000, stock: 10 },
   { id: 'P002', name: 'Wireless Mouse', price: 500000, stock: 50 },
   { id: 'P003', name: 'USB-C Cable', price: 150000, stock: 0 },
@@ -23,7 +16,7 @@ const ProductsComponent = ({
   userId,
   onAddToCart,
 }: ProductsComponentProps) => {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<cartService.Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
@@ -60,8 +53,12 @@ const ProductsComponent = ({
     }));
   };
 
-  const handleAddToCart = (product: Product) => {
+  const handleAddToCart = (product: cartService.Product) => {
     const quantity = quantities[product.id] || 1;
+    if (quantity < 1) {
+      setError('Số lượng phải lớn hơn 0');
+      return;
+    }
     if (quantity > product.stock) {
       setError(`Chỉ còn ${product.stock} sản phẩm`);
       return;
@@ -83,7 +80,10 @@ const ProductsComponent = ({
 
   return (
     <div className="products-container">
-      <h2>Danh Sách Sản Phẩm</h2>
+      <div className="section-heading">
+        <p>ShopCart</p>
+        <h1>Danh sách sản phẩm</h1>
+      </div>
       {error && <div data-testid="error-message" className="error">{error}</div>}
       
       <div className="products-grid">
@@ -101,9 +101,11 @@ const ProductsComponent = ({
             </p>
             
             <div className="quantity-selector">
+              <label htmlFor={`quantity-${product.id}`}>Số lượng</label>
               <input
+                id={`quantity-${product.id}`}
                 type="number"
-                min="0"
+                min="1"
                 max={product.stock}
                 value={quantities[product.id] || 1}
                 onChange={(e) =>

@@ -18,7 +18,8 @@ public class CartRepositoryImpl implements CartRepository {
 
   @Override
   public CartItem save(CartItem item) {
-    db.put(key("user01", item.getProductId()), item);
+    String userId = item.getUserId() == null ? "user01" : item.getUserId();
+    db.put(key(userId, item.getProductId()), item);
     return item;
   }
 
@@ -34,6 +35,9 @@ public class CartRepositoryImpl implements CartRepository {
 
   @Override
   public List<CartItem> findByUserId(String userId) {
-    return db.values().stream().filter(it -> key(userId, it.getProductId()).startsWith(userId + ":")).collect(Collectors.toList());
+    return db.entrySet().stream()
+        .filter(entry -> entry.getKey().startsWith(userId + ":"))
+        .map(Map.Entry::getValue)
+        .collect(Collectors.toList());
   }
 }

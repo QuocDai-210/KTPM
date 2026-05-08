@@ -47,6 +47,7 @@ public class CartService {
       item = new CartItem(p.getId(), request.getQuantity(), p.getName(), p.getPrice());
     }
 
+    item.setUserId(userId);
     return cartRepository.save(item);
   }
 
