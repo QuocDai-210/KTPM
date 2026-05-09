@@ -1,6 +1,7 @@
 package com.shopcart.service;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.security.access.AccessDeniedException;
 
 import com.shopcart.dto.OrderItemRequest;
 import com.shopcart.dto.OrderRequest;
@@ -62,9 +64,9 @@ class OrderServiceTest {
     when(productRepository.findById("P003"))
         .thenReturn(Optional.of(new Product("P003", "Keyboard Mechanical", 2000000L, 10)));
     when(orderRepository.findCoupon("SALE10"))
-        .thenReturn(Optional.of(new com.shopcart.entity.Coupon("SALE10", "PERCENT", 10L, 0L, "2026-12-31")));
-    when(orderRepository.findCoupon("SAVE500"))
-        .thenReturn(Optional.of(new com.shopcart.entity.Coupon("SAVE500", "FIXED", 500000L, 0L, "2026-12-31")));
+        .thenReturn(Optional.of(new com.shopcart.entity.Coupon("SALE10", 10L, 0L, "2026-12-31")));
+    when(orderRepository.findCoupon("SALE15"))
+        .thenReturn(Optional.of(new com.shopcart.entity.Coupon("SALE15", 15L, 0L, "2026-12-31")));
   }
 
   private OrderRequest withCheckoutInfo(OrderRequest request) {
@@ -89,7 +91,7 @@ class OrderServiceTest {
     when(productRepository.findById("P001"))
         .thenReturn(Optional.of(new Product("P001", "Laptop Dell", 15000000L, 10)));
     when(orderRepository.findCoupon("SALE10"))
-        .thenReturn(Optional.of(new com.shopcart.entity.Coupon("SALE10", "PERCENT", 10L, 0L, "2026-12-31")));
+        .thenReturn(Optional.of(new com.shopcart.entity.Coupon("SALE10", 10L, 0L, "2026-12-31")));
     when(orderRepository.save(any(Order.class)))
         .thenAnswer(inv -> {
           Order o = inv.getArgument(0);
@@ -167,7 +169,7 @@ class OrderServiceTest {
     when(productRepository.findById("P001"))
         .thenReturn(Optional.of(new Product("P001", "Laptop Dell", 15000000L, 10)));
     when(orderRepository.findCoupon("SALE10"))
-        .thenReturn(Optional.of(new com.shopcart.entity.Coupon("SALE10", "PERCENT", 10L, 0L, "2026-12-31")));
+        .thenReturn(Optional.of(new com.shopcart.entity.Coupon("SALE10", 10L, 0L, "2026-12-31")));
 
     // Act
     Long totalPrice = orderService.calculateOrderTotal(request);
@@ -262,7 +264,7 @@ class OrderServiceTest {
 
     when(inventoryService.isAvailable("P001", 2)).thenReturn(true);
     when(orderRepository.findCoupon("SALE10"))
-        .thenReturn(Optional.of(new com.shopcart.entity.Coupon("SALE10", "PERCENT", 10L, 0L, "2026-12-31")));
+        .thenReturn(Optional.of(new com.shopcart.entity.Coupon("SALE10", 10L, 0L, "2026-12-31")));
 
     when(orderRepository.save(any(Order.class)))
         .thenAnswer(inv -> {
@@ -281,20 +283,20 @@ class OrderServiceTest {
   }
 
   @Test
-  @DisplayName("TC9: Áp dụng coupon fixed amount")
-  void testApplyFixedCoupon() {
-    // Arrange - Subtotal: 15M, Fixed: 500k discount, Total: 14.55M
+  @DisplayName("TC9: Áp dụng coupon phần trăm khác")
+  void testApplyAnotherPercentCoupon() {
+    // Arrange - Subtotal: 15M, 15% discount, Total: 12.8M
     OrderRequest request =
         OrderRequest.builder()
             .userId("user01")
             .items(List.of(new OrderItemRequest("P001", 1, 15000000L)))
-            .couponCode("SAVE500")
+            .couponCode("SALE15")
             .shippingFee(50000L)
             .build();
 
     when(inventoryService.isAvailable("P001", 1)).thenReturn(true);
-    when(orderRepository.findCoupon("SAVE500"))
-        .thenReturn(Optional.of(new com.shopcart.entity.Coupon("SAVE500", "FIXED", 0L, 500000L, "2026-12-31")));
+    when(orderRepository.findCoupon("SALE15"))
+        .thenReturn(Optional.of(new com.shopcart.entity.Coupon("SALE15", 15L, 0L, "2026-12-31")));
 
     when(orderRepository.save(any(Order.class)))
         .thenAnswer(inv -> {
@@ -456,6 +458,140 @@ class OrderServiceTest {
 
     IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(request));
     assertEquals("Phương thức thanh toán không được để trống", ex.getMessage());
+    verify(orderRepository, never()).save(any(Order.class));
+  }
+
+  @Test
+  @DisplayName("TC17: Calculate total rejects negative shipping fee")
+  void testCalculateOrderTotalNegativeShipping() {
+    OrderRequest request =
+        OrderRequest.builder()
+            .items(List.of(new OrderItemRequest("P001", 1, 15000000L)))
+            .shippingFee(-1L)
+            .build();
+
+    assertThrows(IllegalArgumentException.class, () -> orderService.calculateOrderTotal(request));
+  }
+
+  @Test
+  @DisplayName("TC18: Calculate total rejects null order")
+  void testCalculateOrderTotalNullRequest() {
+    assertThrows(IllegalArgumentException.class, () -> orderService.calculateOrderTotal(null));
+  }
+
+  @Test
+  @DisplayName("TC19: Create order rejects blank product id")
+  void testCreateOrderBlankProductId() {
+    OrderRequest request =
+        OrderRequest.builder()
+            .userId("user01")
+            .items(List.of(new OrderItemRequest(" ", 1, 15000000L)))
+            .shippingAddress("123 Test Street, HCM")
+            .paymentMethod("COD")
+            .build();
+
+    assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(request));
+    verify(orderRepository, never()).save(any(Order.class));
+  }
+
+  @Test
+  @DisplayName("TC20: Create order rejects null quantity")
+  void testCreateOrderNullQuantity() {
+    OrderRequest request =
+        OrderRequest.builder()
+            .userId("user01")
+            .items(List.of(new OrderItemRequest("P001", null, 15000000L)))
+            .shippingAddress("123 Test Street, HCM")
+            .paymentMethod("COD")
+            .build();
+
+    assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(request));
+    verify(orderRepository, never()).save(any(Order.class));
+  }
+
+  @Test
+  @DisplayName("TC21: Coupon hết hạn bị từ chối")
+  void testExpiredCouponRejected() {
+    OrderRequest request =
+        OrderRequest.builder()
+            .items(List.of(new OrderItemRequest("P001", 1, 15000000L)))
+            .couponCode("OLD10")
+            .build();
+    when(orderRepository.findCoupon("OLD10"))
+        .thenReturn(Optional.of(new com.shopcart.entity.Coupon("OLD10", 10L, 0L, "2020-01-01")));
+
+    assertThrows(IllegalArgumentException.class, () -> orderService.calculateOrderTotal(request));
+  }
+
+  @Test
+  @DisplayName("TC22: Coupon chưa đạt giá trị tối thiểu bị từ chối")
+  void testCouponMinimumOrderRejected() {
+    OrderRequest request =
+        OrderRequest.builder()
+            .items(List.of(new OrderItemRequest("P001", 1, 15000000L)))
+            .couponCode("BIGORDER")
+            .build();
+    when(orderRepository.findCoupon("BIGORDER"))
+        .thenReturn(Optional.of(new com.shopcart.entity.Coupon("BIGORDER", 10L, 20000000L, "2026-12-31")));
+
+    assertThrows(IllegalArgumentException.class, () -> orderService.calculateOrderTotal(request));
+  }
+
+  @Test
+  @DisplayName("TC23: Lấy order đúng user thành công")
+  void testGetOrderForUserSuccess() {
+    Order order = new Order();
+    order.setId("ORD-001");
+    order.setUserId("user01");
+    when(orderRepository.findById("ORD-001")).thenReturn(Optional.of(order));
+
+    Order result = orderService.getOrderForUser("ORD-001", "user01");
+
+    assertEquals("ORD-001", result.getId());
+  }
+
+  @Test
+  @DisplayName("TC24: Lấy order khác user bị từ chối")
+  void testGetOrderForUserForbidden() {
+    Order order = new Order();
+    order.setId("ORD-001");
+    order.setUserId("user01");
+    when(orderRepository.findById("ORD-001")).thenReturn(Optional.of(order));
+
+    assertThrows(AccessDeniedException.class, () -> orderService.getOrderForUser("ORD-001", "user02"));
+  }
+
+  @Test
+  @DisplayName("TC25: Lấy order không tồn tại trả lỗi")
+  void testGetOrderForUserNotFound() {
+    when(orderRepository.findById("ORD-404")).thenReturn(Optional.empty());
+
+    assertThrows(NoSuchElementException.class, () -> orderService.getOrderForUser("ORD-404", "user01"));
+  }
+
+  @Test
+  @DisplayName("TC26: Hủy order theo user thành công")
+  void testCancelOrderForUserSuccess() {
+    Order order = new Order();
+    order.setId("ORD-001");
+    order.setUserId("user01");
+    order.setItems(List.of(new OrderItem("P001", 2, 15000000L)));
+    when(orderRepository.findById("ORD-001")).thenReturn(Optional.of(order));
+    when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    orderService.cancelOrderForUser("ORD-001", "user01");
+
+    assertEquals(OrderStatus.CANCELLED, order.getStatus());
+    verify(inventoryService, times(1)).increaseStock("P001", 2);
+  }
+
+  @Test
+  @DisplayName("TC27: Hủy order không tồn tại không lỗi")
+  void testCancelOrderNotFoundDoesNothing() {
+    when(orderRepository.findById("ORD-404")).thenReturn(Optional.empty());
+
+    orderService.cancelOrder("ORD-404");
+
     verify(orderRepository, never()).save(any(Order.class));
   }
 }

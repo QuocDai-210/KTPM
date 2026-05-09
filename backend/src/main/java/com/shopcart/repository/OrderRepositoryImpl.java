@@ -1,5 +1,6 @@
 package com.shopcart.repository;
 
+import com.shopcart.database.seed.CouponSeedData;
 import com.shopcart.entity.Coupon;
 import com.shopcart.entity.Order;
 import java.util.HashMap;
@@ -14,13 +15,9 @@ public class OrderRepositoryImpl implements OrderRepository {
   private static final Map<String, Coupon> coupons = new HashMap<>();
   private static final AtomicInteger sequence = new AtomicInteger(1000);
 
-  static {
-    coupons.put("SALE10", new Coupon("SALE10", "PERCENT", 10L, 0L, "2026-12-31"));
-    coupons.put("SALE20", new Coupon("SALE20", "PERCENT", 20L, 0L, "2026-12-31"));
-    coupons.put("FIXED100K", new Coupon("FIXED100K", "FIXED", 100000L, 0L, "2026-12-31"));
-    coupons.put("SAVE500", new Coupon("SAVE500", "FIXED", 500000L, 0L, "2026-12-31"));
-    coupons.put("EXPIRED2023", new Coupon("EXPIRED2023", "PERCENT", 10L, 0L, "2023-12-31"));
-    coupons.put("EXPIRED2024", new Coupon("EXPIRED2024", "PERCENT", 10L, 0L, "2024-04-30"));
+  public OrderRepositoryImpl() {
+    coupons.clear();
+    coupons.putAll(CouponSeedData.loadCoupons());
   }
 
   @Override

@@ -1,0 +1,38 @@
+[
+  {
+    "code": "SALE10",
+    "discountValue": 10,
+    "minOrderValue": 0,
+    "expiryDate": "2026-12-31"
+  },
+  {
+    "code": "SALE20",
+    "discountValue": 20,
+    "minOrderValue": 0,
+    "expiryDate": "2026-12-31"
+  },
+  {
+    "code": "SALE5",
+    "discountValue": 5,
+    "minOrderValue": 0,
+    "expiryDate": "2026-12-31"
+  },
+  {
+    "code": "SALE15",
+    "discountValue": 15,
+    "minOrderValue": 0,
+    "expiryDate": "2026-12-31"
+  },
+  {
+    "code": "EXPIRED2023",
+    "discountValue": 10,
+    "minOrderValue": 0,
+    "expiryDate": "2023-12-31"
+  },
+  {
+    "code": "EXPIRED2024",
+    "discountValue": 10,
+    "minOrderValue": 0,
+    "expiryDate": "2024-04-30"
+  }
+]

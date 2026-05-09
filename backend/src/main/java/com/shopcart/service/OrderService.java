@@ -183,12 +183,7 @@ public class OrderService {
       throw new IllegalArgumentException(ApiMessages.COUPON_MIN_ORDER_NOT_MET);
     }
 
-    long discount = 0L;
-    if ("PERCENT".equals(coupon.getDiscountType())) {
-      discount = (long) (subtotal * (coupon.getDiscountValue() / 100.0));
-    } else if ("FIXED".equals(coupon.getDiscountType()) || "FIXED_AMOUNT".equals(coupon.getDiscountType())) {
-      discount = coupon.getDiscountValue();
-    }
+    long discount = (long) (subtotal * (coupon.getDiscountValue() / 100.0));
     return Math.min(discount, subtotal);
   }
 }

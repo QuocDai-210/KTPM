@@ -9,8 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Coupon {
   private String code;
-  private String discountType; // PERCENT | FIXED
-  private Long discountValue;
+  private Long discountValue; // percent
   private Long minOrderValue;
   private String expiryDate; // ISO date
 }

@@ -1,0 +1,72 @@
+[
+  {
+    "id": "P001",
+    "name": "Laptop Dell XPS 13",
+    "price": 15000000,
+    "stock": 10,
+    "status": "ACTIVE"
+  },
+  {
+    "id": "P002",
+    "name": "Mouse Logitech MX Master",
+    "price": 500000,
+    "stock": 50,
+    "status": "ACTIVE"
+  },
+  {
+    "id": "P003",
+    "name": "Keyboard Mechanical Keychron K2",
+    "price": 2000000,
+    "stock": 20,
+    "status": "ACTIVE"
+  },
+  {
+    "id": "P004",
+    "name": "Monitor LG UltraGear 27",
+    "price": 6500000,
+    "stock": 15,
+    "status": "ACTIVE"
+  },
+  {
+    "id": "P005",
+    "name": "Headset Sony WH-1000XM5",
+    "price": 8500000,
+    "stock": 12,
+    "status": "ACTIVE"
+  },
+  {
+    "id": "P006",
+    "name": "Webcam Logitech C920",
+    "price": 1800000,
+    "stock": 25,
+    "status": "ACTIVE"
+  },
+  {
+    "id": "P007",
+    "name": "SSD Samsung 1TB",
+    "price": 2500000,
+    "stock": 30,
+    "status": "ACTIVE"
+  },
+  {
+    "id": "P008",
+    "name": "Router TP-Link AX3000",
+    "price": 2200000,
+    "stock": 18,
+    "status": "ACTIVE"
+  },
+  {
+    "id": "P009",
+    "name": "iPad Air",
+    "price": 16000000,
+    "stock": 8,
+    "status": "ACTIVE"
+  },
+  {
+    "id": "P010",
+    "name": "USB-C Hub Anker 7-in-1",
+    "price": 1200000,
+    "stock": 40,
+    "status": "ACTIVE"
+  }
+]
