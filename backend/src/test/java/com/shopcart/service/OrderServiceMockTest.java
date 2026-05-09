@@ -62,6 +62,8 @@ class OrderServiceMockTest {
         ))
         .couponCode("SALE10")
         .shippingFee(50000L)
+        .shippingAddress("123 Test Street, HCM")
+        .paymentMethod("COD")
         .build();
 
     when(productRepository.findById("P001")).thenReturn(Optional.of(new Product("P001", "Laptop Dell", 15000000L, 10)));

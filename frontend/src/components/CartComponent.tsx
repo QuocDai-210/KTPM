@@ -10,6 +10,14 @@ const couponCatalog: Record<string, CouponInfo> = {
 
 const formatMoney = (value: number) => new Intl.NumberFormat('vi-VN').format(value);
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error && typeof error === 'object') {
+    const response = 'response' in error ? (error as { response?: { data?: { message?: string } } }).response : undefined;
+    if (response?.data?.message) return response.data.message;
+  }
+  return fallback;
+};
+
 export default function CartComponent({ userId }: { userId: string }) {
   const [items, setItems] = useState<cartService.CartItem[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -65,7 +73,10 @@ export default function CartComponent({ userId }: { userId: string }) {
 
   const handleDelete = (productId: string) => {
     setFormMessage(null);
-    cartService.removeFromCart(userId, productId).then((r) => setItems(Array.isArray(r.items) ? r.items : []));
+    cartService
+      .removeFromCart(userId, productId)
+      .then((r) => setItems(Array.isArray(r.items) ? r.items : []))
+      .catch((error) => setFormMessage(getErrorMessage(error, 'Không thể xóa sản phẩm')));
   };
 
   const handleChange = (productId: string, value: string) => {
@@ -75,7 +86,10 @@ export default function CartComponent({ userId }: { userId: string }) {
       return;
     }
     setFormMessage(null);
-    cartService.updateQuantity(userId, productId, quantity).then((r) => setItems(Array.isArray(r.items) ? r.items : []));
+    cartService
+      .updateQuantity(userId, productId, quantity)
+      .then((r) => setItems(Array.isArray(r.items) ? r.items : []))
+      .catch((error) => setFormMessage(getErrorMessage(error, 'Không thể cập nhật số lượng')));
   };
 
   const handleApplyCoupon = () => {
@@ -110,8 +124,8 @@ export default function CartComponent({ userId }: { userId: string }) {
       setFormMessage(null);
       setOrderMessage(`Đặt hàng thành công: ${order.orderId}`);
       setItems([]);
-    } catch {
-      setFormMessage('Không thể đặt hàng');
+    } catch (error) {
+      setFormMessage(getErrorMessage(error, 'Không thể đặt hàng'));
     }
   };
 

@@ -34,6 +34,8 @@ export default function CheckoutPage({ cart }: CheckoutPageProps) {
   );
   const [couponCode, setCouponCode] = useState('');
   const [message, setMessage] = useState<string | null>(null);
+  const [shippingAddress, setShippingAddress] = useState('123 Test Street, HCM');
+  const [paymentMethod, setPaymentMethod] = useState('COD');
   const [price, setPrice] = useState<PriceState>({
     subtotal: initialSubtotal,
     discount: 0,
@@ -67,6 +69,15 @@ export default function CheckoutPage({ cart }: CheckoutPageProps) {
 
   const placeOrder = async () => {
     setMessage(null);
+    if (!shippingAddress.trim()) {
+      setMessage('Vui lòng nhập địa chỉ giao hàng');
+      return;
+    }
+    if (!paymentMethod.trim()) {
+      setMessage('Vui lòng chọn phương thức thanh toán');
+      return;
+    }
+
     const stock = await inventoryService.checkStock(
       cart.items.map((item) => ({
         productId: item.productId,
@@ -89,11 +100,8 @@ export default function CheckoutPage({ cart }: CheckoutPageProps) {
         })),
         totalPrice: price.total,
         shippingFee: price.shipping,
-        shippingAddress: {
-          line1: '123 Test Street',
-          city: 'HCM',
-        },
-        paymentMethod: 'COD',
+        shippingAddress,
+        paymentMethod,
       });
       setMessage(response.message ?? `Đặt hàng thành công: ${response.orderId}`);
     } catch {
@@ -119,6 +127,20 @@ export default function CheckoutPage({ cart }: CheckoutPageProps) {
       <button data-testid="apply-coupon-btn" onClick={applyCoupon}>
         Áp dụng
       </button>
+      <input
+        data-testid="shipping-address-input"
+        value={shippingAddress}
+        onChange={(e) => setShippingAddress(e.target.value)}
+        placeholder="Địa chỉ giao hàng"
+      />
+      <select
+        data-testid="payment-method-select"
+        value={paymentMethod}
+        onChange={(e) => setPaymentMethod(e.target.value)}
+      >
+        <option value="COD">COD</option>
+        <option value="CARD">Thẻ ngân hàng</option>
+      </select>
       <button data-testid="place-order-btn" onClick={placeOrder}>
         Đặt hàng
       </button>

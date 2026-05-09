@@ -178,7 +178,8 @@ describe('Purchase Mock Tests', () => {
           expect.objectContaining({
             items: expect.any(Array),
             totalPrice: expect.any(Number),
-            shippingAddress: expect.any(Object),
+            shippingAddress: expect.any(String),
+            paymentMethod: 'COD',
           })
         );
       });

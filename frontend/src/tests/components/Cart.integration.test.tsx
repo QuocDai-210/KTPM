@@ -188,6 +188,33 @@ describe('Cart Component Integration Tests', () => {
     expect(await screen.findByTestId('empty-cart-message')).toBeInTheDocument();
   });
 
+  test('TC4c: Cập nhật số lượng hiển thị lỗi khi vượt tồn kho', async () => {
+    vi.mocked(cartService.getCart).mockResolvedValue({
+      items: [
+        {
+          productId: 'P001',
+          productName: 'Laptop Dell',
+          quantity: 2,
+          price: 15000000,
+        },
+      ],
+    });
+    vi.mocked(cartService.updateQuantity).mockRejectedValue({
+      response: {
+        data: {
+          message: 'Tồn kho không đủ',
+        },
+      },
+    });
+
+    render(<CartComponent userId="user01" />);
+
+    const quantityInput = await screen.findByTestId('quantity-input-P001');
+    fireEvent.change(quantityInput, { target: { value: '99' } });
+
+    expect(await screen.findByTestId('form-message')).toHaveTextContent('Tồn kho không đủ');
+  });
+
   test('TC5: Hiển thị thông báo lỗi khi API gặp sự cố', async () => {
     // Arrange
     vi.mocked(cartService.getCart).mockRejectedValue(

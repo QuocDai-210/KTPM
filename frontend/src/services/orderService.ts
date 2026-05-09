@@ -16,11 +16,7 @@ export interface OrderRequest {
   totalPrice?: number;
   couponCode?: string;
   shippingFee?: number;
-  shippingAddress?: {
-    line1: string;
-    city: string;
-    phone?: string;
-  };
+  shippingAddress?: string;
   paymentMethod?: string;
 }
 

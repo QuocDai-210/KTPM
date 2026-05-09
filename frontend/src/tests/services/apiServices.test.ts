@@ -34,6 +34,8 @@ describe('API services', () => {
     await expect(cartService.createOrder({
       userId: 'user01',
       items: [{ productId: 'P001', quantity: 1, price: 15000000 }],
+      shippingAddress: '123 Test Street, HCM',
+      paymentMethod: 'COD',
     })).resolves.toEqual({ orderId: 'ORD-001' });
 
     expect(mockedAxios.get).toHaveBeenNthCalledWith(1, '/api/products', headers);
@@ -53,7 +55,12 @@ describe('API services', () => {
     expect(mockedAxios.post).toHaveBeenNthCalledWith(
       2,
       '/api/orders',
-      { userId: 'user01', items: [{ productId: 'P001', quantity: 1, price: 15000000 }] },
+      {
+        userId: 'user01',
+        items: [{ productId: 'P001', quantity: 1, price: 15000000 }],
+        shippingAddress: '123 Test Street, HCM',
+        paymentMethod: 'COD',
+      },
       headers,
     );
   });
@@ -67,6 +74,7 @@ describe('API services', () => {
     const payload: orderService.OrderRequest = {
       userId: 'user01',
       items: [{ productId: 'P001', quantity: 1, price: 15000000 }],
+      shippingAddress: '123 Test Street, HCM',
       paymentMethod: 'COD',
     };
     await expect(orderService.createOrder(payload)).resolves.toEqual({

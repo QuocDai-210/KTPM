@@ -28,17 +28,12 @@ public class OrderService {
   }
 
   public OrderResponse createOrder(OrderRequest request) {
-    if (request.getItems() == null || request.getItems().isEmpty()) {
-      throw new IllegalArgumentException("Đơn hàng phải có ít nhất một sản phẩm");
-    }
+    validateOrderRequest(request, true);
     if (request.getShippingFee() != null && request.getShippingFee() < 0) {
       throw new IllegalArgumentException("Phí vận chuyển không được âm");
     }
     // Check inventory
     for (OrderItemRequest it : request.getItems()) {
-      if (it.getQuantity() == null || it.getQuantity() < 1) {
-        throw new IllegalArgumentException("Số lượng phải lớn hơn 0");
-      }
       if (!inventoryService.isAvailable(it.getProductId(), it.getQuantity())) {
         throw new InsufficientStockException("Tồn kho không đủ");
       }
@@ -71,9 +66,7 @@ public class OrderService {
   }
 
   public Long calculateOrderTotal(OrderRequest request) {
-    if (request.getItems() == null || request.getItems().isEmpty()) {
-      throw new IllegalArgumentException("Đơn hàng phải có ít nhất một sản phẩm");
-    }
+    validateOrderRequest(request, false);
     if (request.getShippingFee() != null && request.getShippingFee() < 0) {
       throw new IllegalArgumentException("Phí vận chuyển không được âm");
     }
@@ -112,6 +105,34 @@ public class OrderService {
 
     long shipping = request.getShippingFee() == null ? 0L : request.getShippingFee();
     return subtotal - discount + shipping;
+  }
+
+  private void validateOrderRequest(OrderRequest request, boolean requireCheckoutInfo) {
+    if (request == null) {
+      throw new IllegalArgumentException("Đơn hàng không được để trống");
+    }
+    if (request.getItems() == null || request.getItems().isEmpty()) {
+      throw new IllegalArgumentException("Đơn hàng phải có ít nhất một sản phẩm");
+    }
+    if (requireCheckoutInfo) {
+      if (request.getShippingAddress() == null || request.getShippingAddress().isBlank()) {
+        throw new IllegalArgumentException("Địa chỉ giao hàng không được để trống");
+      }
+      if (request.getPaymentMethod() == null || request.getPaymentMethod().isBlank()) {
+        throw new IllegalArgumentException("Phương thức thanh toán không được để trống");
+      }
+    }
+    for (OrderItemRequest it : request.getItems()) {
+      if (it == null) {
+        throw new IllegalArgumentException("Sản phẩm trong đơn hàng không được để trống");
+      }
+      if (it.getProductId() == null || it.getProductId().isBlank()) {
+        throw new IllegalArgumentException("Product ID không được rỗng");
+      }
+      if (it.getQuantity() == null || it.getQuantity() < 1) {
+        throw new IllegalArgumentException("Số lượng phải lớn hơn 0");
+      }
+    }
   }
 
   public Order getOrderById(String id) {
