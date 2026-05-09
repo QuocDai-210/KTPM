@@ -27,47 +27,37 @@ describe('Cart Mock Tests', () => {
   });
 
   describe('Mock: Add to Cart Success', () => {
-    test('Mock: Thêm sản phẩm thành công với mocked service', async () => {
-      // Arrange
-      const mockResponse = {
+    test('Mock: them san pham thanh cong voi mocked service', async () => {
+      vi.mocked(cartService.addToCart).mockResolvedValue({
         success: true,
-        message: 'Thêm vào giỏ hàng thành công',
+        message: 'Them vao gio hang thanh cong',
         cartTotal: 30000000,
         cartCount: 2,
-      };
+      });
 
-      vi.mocked(cartService.addToCart).mockResolvedValue(mockResponse);
-
-      // Act
       render(<App />);
 
-      // Simulate user input
       const quantityInput = await screen.findByTestId('quantity-input-P001');
       const addButton = screen.getByTestId('add-to-cart-P001');
 
       fireEvent.change(quantityInput, { target: { value: '2' } });
       fireEvent.click(addButton);
 
-      // Assert
       await waitFor(() => {
         expect(cartService.addToCart).toHaveBeenCalledWith('user01', 'P001', 2);
-        expect(screen.getByText(/thành công/i)).toBeInTheDocument();
+        expect(screen.getByText(/thanh cong/i)).toBeInTheDocument();
       });
     });
   });
 
   describe('Mock: Add to Cart Failure', () => {
-    test('Mock: Thêm sản phẩm thất bại - Stock không đủ', async () => {
-      // Arrange
-      const mockError = {
+    test('Mock: them san pham that bai do vuot ton kho', async () => {
+      vi.mocked(cartService.addToCart).mockRejectedValue({
         success: false,
-        message: 'Số lượng không được vượt quá tồn kho',
+        message: 'So luong khong duoc vuot qua ton kho',
         error: 'INSUFFICIENT_STOCK',
-      };
+      });
 
-      vi.mocked(cartService.addToCart).mockRejectedValue(mockError);
-
-      // Act
       render(<App />);
 
       const quantityInput = await screen.findByTestId('quantity-input-P001');
@@ -76,16 +66,15 @@ describe('Cart Mock Tests', () => {
       fireEvent.change(quantityInput, { target: { value: '50' } });
       fireEvent.click(addButton);
 
-      // Assert
       await waitFor(() => {
-        expect(screen.getByText(/chỉ còn 10 sản phẩm/i)).toBeInTheDocument();
+        expect(screen.getByTestId('error-message')).toHaveTextContent('10');
         expect(cartService.addToCart).not.toHaveBeenCalled();
       });
     });
   });
 
   describe('Mock: Verify Call Count', () => {
-    test('Mock: Xác minh addToCart được gọi đúng số lần', async () => {
+    test('Mock: xac minh addToCart duoc goi dung so lan', async () => {
       vi.mocked(cartService.addToCart).mockResolvedValue({
         success: true,
         message: 'Success',
@@ -96,11 +85,11 @@ describe('Cart Mock Tests', () => {
       render(<App />);
 
       const addButton = await screen.findByTestId('add-to-cart-P001');
-
       fireEvent.click(addButton);
       await waitFor(() => expect(cartService.addToCart).toHaveBeenCalledTimes(1));
+
       await screen.findByText('Laptop Dell');
-      fireEvent.click(screen.getByRole('button', { name: 'Sản phẩm' }));
+      fireEvent.click(screen.getByRole('button', { name: 'San pham' }));
       const secondAddButton = await screen.findByTestId('add-to-cart-P001');
       fireEvent.click(secondAddButton);
 
@@ -111,7 +100,7 @@ describe('Cart Mock Tests', () => {
   });
 
   describe('Mock: Verify Call Arguments', () => {
-    test('Mock: Xác minh arguments được truyền chính xác', async () => {
+    test('Mock: xac minh arguments duoc truyen chinh xac', async () => {
       vi.mocked(cartService.addToCart).mockResolvedValue({
         success: true,
         message: 'Success',
@@ -125,17 +114,13 @@ describe('Cart Mock Tests', () => {
       fireEvent.click(addButton);
 
       await waitFor(() => {
-        expect(cartService.addToCart).toHaveBeenCalledWith(
-          'user01',
-          'P001',
-          1,
-        );
+        expect(cartService.addToCart).toHaveBeenCalledWith('user01', 'P001', 1);
       });
     });
   });
 
   describe('Mock: Cart Badge Update', () => {
-    test('Mock: Badge giỏ hàng cập nhật sau khi add', async () => {
+    test('Mock: badge gio hang cap nhat sau khi add', async () => {
       vi.mocked(cartService.addToCart).mockResolvedValue({
         success: true,
         message: 'Success',
@@ -149,8 +134,7 @@ describe('Cart Mock Tests', () => {
       fireEvent.click(addButton);
 
       await waitFor(() => {
-        const badge = screen.getByTestId('cart-badge');
-        expect(badge).toHaveTextContent('2');
+        expect(screen.getByTestId('cart-badge')).toHaveTextContent('2');
       });
     });
 

@@ -1,11 +1,13 @@
 package com.shopcart.controller;
 
+import com.shopcart.common.ApiMessages;
 import com.shopcart.dto.OrderRequest;
 import com.shopcart.dto.OrderResponse;
 import com.shopcart.service.OrderService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,9 +28,11 @@ public class OrderController {
   public ResponseEntity<?> createOrder(
       @RequestHeader(value = "Authorization", required = false) String auth,
       @Valid @RequestBody OrderRequest request) {
-    if (auth == null) {
-      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    String authenticatedUserId = requireUser(auth);
+    if (request.getUserId() == null || request.getUserId().isBlank()) {
+      request.setUserId(authenticatedUserId);
     }
+    verifyOwnership(authenticatedUserId, request.getUserId());
     OrderResponse response = orderService.createOrder(request);
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
@@ -37,10 +41,8 @@ public class OrderController {
   public ResponseEntity<?> getOrder(
       @RequestHeader(value = "Authorization", required = false) String auth,
       @PathVariable String orderId) {
-    if (auth == null) {
-      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-    }
-    var order = orderService.getOrderById(orderId);
+    String authenticatedUserId = requireUser(auth);
+    var order = orderService.getOrderForUser(orderId, authenticatedUserId);
     return ResponseEntity.ok(order);
   }
 
@@ -48,10 +50,19 @@ public class OrderController {
   public ResponseEntity<?> cancelOrder(
       @RequestHeader(value = "Authorization", required = false) String auth,
       @PathVariable String orderId) {
-    if (auth == null) {
-      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-    }
-    orderService.cancelOrder(orderId);
+    String authenticatedUserId = requireUser(auth);
+    orderService.cancelOrderForUser(orderId, authenticatedUserId);
     return ResponseEntity.ok().build();
+  }
+
+  private String requireUser(String auth) {
+    return AuthSupport.extractUserId(auth)
+        .orElseThrow(() -> new AccessDeniedException(ApiMessages.INVALID_AUTHORIZATION));
+  }
+
+  private void verifyOwnership(String authenticatedUserId, String requestedUserId) {
+    if (!authenticatedUserId.equals(requestedUserId)) {
+      throw new AccessDeniedException(ApiMessages.ORDER_OPERATION_FORBIDDEN);
+    }
   }
 }
