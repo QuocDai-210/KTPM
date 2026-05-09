@@ -3,7 +3,7 @@ import {
   calculateOrderPrice,
   validateCoupon,
   checkInventoryAvailabilityForOrder,
-} from './priceCalculation';
+} from '../../utils/priceCalculation';
 
 describe('Price Calculation Tests', () => {
   describe('calculateOrderPrice', () => {

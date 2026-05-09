@@ -3,7 +3,7 @@ import {
   validateCartItem,
   calculateCartTotal,
   checkInventoryAvailability,
-} from './cartValidation';
+} from '../../utils/cartValidation';
 
 describe('Cart Validation Tests', () => {
   describe('validateCartItem', () => {

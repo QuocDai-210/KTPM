@@ -1,11 +1,11 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import CheckoutPage from './CheckoutPage';
-import * as orderService from '../services/orderService';
-import * as inventoryService from '../services/inventoryService';
+import CheckoutPage from '../../components/CheckoutPage';
+import * as orderService from '../../services/orderService';
+import * as inventoryService from '../../services/inventoryService';
 
-vi.mock('../services/orderService');
-vi.mock('../services/inventoryService');
+vi.mock('../../services/orderService');
+vi.mock('../../services/inventoryService');
 
 describe('Purchase Mock Tests', () => {
   beforeEach(() => {

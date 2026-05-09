@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import axios from 'axios';
-import * as cartService from './cartService';
-import * as inventoryService from './inventoryService';
-import * as orderService from './orderService';
+import * as cartService from '../../services/cartService';
+import * as inventoryService from '../../services/inventoryService';
+import * as orderService from '../../services/orderService';
 
 vi.mock('axios');
 

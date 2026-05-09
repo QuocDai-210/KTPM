@@ -37,11 +37,11 @@ Dự án ShopCart là một ứng dụng web thương mại điện tử phục 
 ShopCart_FE_BE/
 ├── frontend/                 # React 19 + Vite application
 │   ├── src/
-│   │   ├── components/       # React components (Cart, Checkout)
+│   │   ├── components/       # Cart, Checkout, Inventory components
 │   │   ├── services/         # API services (cartService, orderService)
 │   │   ├── utils/            # Validation, price calculation utilities
 │   │   ├── hooks/            # Custom React hooks
-│   │   └── tests/            # Unit tests
+│   │   └── tests/            # Test files (Vitest)
 │   ├── e2e/                  # Playwright E2E tests
 │   ├── vite.config.ts
 │   ├── playwright.config.ts
@@ -55,7 +55,7 @@ ShopCart_FE_BE/
 │   │   ├── entity/            # Database entities
 │   │   ├── repository/        # Data access layers
 │   │   └── exception/         # Custom exceptions
-│   ├── src/test/              # Unit, integration, mock, security tests
+│   ├── src/test/              # Test files (JUnit 5 + Mockito)
 │   ├── performance-tests.k6.js
 │   └── pom.xml
 │

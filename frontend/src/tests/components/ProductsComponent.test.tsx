@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import ProductsComponent from './ProductsComponent';
-import * as cartService from '../services/cartService';
+import ProductsComponent from '../../components/ProductsComponent';
+import * as cartService from '../../services/cartService';
 
-vi.mock('../services/cartService');
+vi.mock('../../services/cartService');
 
 describe('ProductsComponent coverage tests', () => {
   beforeEach(() => {
