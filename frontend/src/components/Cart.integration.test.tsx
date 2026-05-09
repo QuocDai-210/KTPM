@@ -10,24 +10,20 @@ describe('Cart Component Integration Tests', () => {
     vi.clearAllMocks();
   });
 
-  test('TC1: Hiển thị giỏ hàng rỗng khi chưa có sản phẩm', async () => {
-    // Arrange
+  test('TC1: hien thi gio hang rong khi chua co san pham', async () => {
     vi.mocked(cartService.getCart).mockResolvedValue({
       items: [],
       total: 0,
     });
 
-    // Act
     render(<CartComponent userId="user01" />);
 
-    // Assert
     await waitFor(() => {
       expect(screen.getByTestId('empty-cart-message')).toBeInTheDocument();
     });
   });
 
-  test('TC2: Hiển thị danh sách sản phẩm trong giỏ hàng', async () => {
-    // Arrange
+  test('TC2: hien thi danh sach san pham trong gio hang', async () => {
     vi.mocked(cartService.getCart).mockResolvedValue({
       items: [
         {
@@ -46,10 +42,8 @@ describe('Cart Component Integration Tests', () => {
       total: 30500000,
     });
 
-    // Act
     render(<CartComponent userId="user01" />);
 
-    // Assert
     await waitFor(() => {
       expect(screen.getByText('Laptop Dell')).toBeInTheDocument();
       expect(screen.getByText('Mouse Logitech')).toBeInTheDocument();
@@ -57,8 +51,7 @@ describe('Cart Component Integration Tests', () => {
     });
   });
 
-  test('TC3: Xóa sản phẩm khỏi giỏ hàng', async () => {
-    // Arrange
+  test('TC3: xoa san pham khoi gio hang', async () => {
     vi.mocked(cartService.getCart).mockResolvedValue({
       items: [
         {
@@ -76,24 +69,20 @@ describe('Cart Component Integration Tests', () => {
       total: 0,
     });
 
-    // Act
     render(<CartComponent userId="user01" />);
 
     await waitFor(() => {
       expect(screen.getByText('Laptop Dell')).toBeInTheDocument();
     });
 
-    const deleteBtn = screen.getByTestId('delete-product-P001');
-    fireEvent.click(deleteBtn);
+    fireEvent.click(screen.getByTestId('delete-product-P001'));
 
-    // Assert
     await waitFor(() => {
       expect(cartService.removeFromCart).toHaveBeenCalledWith('user01', 'P001');
     });
   });
 
-  test('TC4: Cập nhật số lượng sản phẩm trong giỏ', async () => {
-    // Arrange
+  test('TC4: cap nhat so luong san pham trong gio', async () => {
     vi.mocked(cartService.getCart).mockResolvedValue({
       items: [
         {
@@ -118,54 +107,100 @@ describe('Cart Component Integration Tests', () => {
       total: 75000000,
     });
 
-    // Act
     render(<CartComponent userId="user01" />);
 
     await waitFor(() => {
       expect(screen.getByText('Laptop Dell')).toBeInTheDocument();
     });
 
-    const quantityInput = screen.getByTestId('quantity-input-P001');
-    fireEvent.change(quantityInput, { target: { value: '5' } });
+    fireEvent.change(screen.getByTestId('quantity-input-P001'), { target: { value: '5' } });
 
-    // Assert
     await waitFor(() => {
       expect(cartService.updateQuantity).toHaveBeenCalledWith('user01', 'P001', 5);
     });
   });
 
-  test('TC5: Hiển thị thông báo lỗi khi API gặp sự cố', async () => {
-    // Arrange
-    vi.mocked(cartService.getCart).mockRejectedValue(
-      new Error('API Error')
-    );
+  test('TC5: hien thi thong bao loi khi API gap su co', async () => {
+    vi.mocked(cartService.getCart).mockRejectedValue(new Error('API Error'));
 
-    // Act
     render(<CartComponent userId="user01" />);
 
-    // Assert
     await waitFor(() => {
       expect(screen.getByTestId('error-message')).toBeInTheDocument();
     });
   });
 
-  test('TC6: Hiển thị loading state khi tải giỏ hàng', async () => {
-    // Arrange
+  test('TC6: hien thi loading state khi tai gio hang', async () => {
     vi.mocked(cartService.getCart).mockImplementation(
-      () => new Promise(resolve => setTimeout(() => resolve({
-        items: [],
-        total: 0,
-      }), 100))
+      () =>
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                items: [],
+                total: 0,
+              }),
+            100,
+          ),
+        ),
     );
 
-    // Act
     render(<CartComponent userId="user01" />);
 
-    // Assert
     expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+    });
+  });
+
+  test('TC7: checkout xoa hoan toan san pham da thanh toan khoi gio hang', async () => {
+    vi.mocked(cartService.getCart).mockResolvedValue({
+      items: [
+        {
+          productId: 'P001',
+          productName: 'Laptop Dell',
+          quantity: 1,
+          price: 15000000,
+        },
+        {
+          productId: 'P002',
+          productName: 'Mouse Logitech',
+          quantity: 1,
+          price: 500000,
+        },
+      ],
+      total: 15500000,
+    });
+
+    vi.mocked(cartService.createOrder).mockResolvedValue({
+      orderId: 'ORD-001',
+      status: 'PENDING',
+      totalPrice: 15550000,
+    });
+
+    vi.mocked(cartService.removeFromCart)
+      .mockResolvedValueOnce({
+        items: [{ productId: 'P002', productName: 'Mouse Logitech', quantity: 1, price: 500000 }],
+      })
+      .mockResolvedValueOnce({ items: [] });
+
+    render(<CartComponent userId="user01" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Laptop Dell')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByTestId('shipping-address-input'), {
+      target: { value: '123 Test Street' },
+    });
+    fireEvent.click(screen.getByTestId('place-order-btn'));
+
+    await waitFor(() => {
+      expect(cartService.createOrder).toHaveBeenCalled();
+      expect(cartService.removeFromCart).toHaveBeenCalledWith('user01', 'P001');
+      expect(cartService.removeFromCart).toHaveBeenCalledWith('user01', 'P002');
+      expect(screen.getByTestId('empty-cart-message')).toBeInTheDocument();
     });
   });
 });

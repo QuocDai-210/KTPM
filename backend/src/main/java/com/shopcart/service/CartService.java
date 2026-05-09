@@ -1,5 +1,6 @@
 package com.shopcart.service;
 
+import com.shopcart.common.ApiMessages;
 import com.shopcart.dto.CartItemRequest;
 import com.shopcart.entity.CartItem;
 import com.shopcart.entity.Product;
@@ -23,26 +24,27 @@ public class CartService {
 
   public CartItem addToCart(String userId, CartItemRequest request) {
     if (request.getProductId() == null || request.getProductId().isBlank()) {
-      throw new IllegalArgumentException("Product ID không được rỗng");
+      throw new IllegalArgumentException(ApiMessages.PRODUCT_ID_REQUIRED);
     }
     if (request.getQuantity() == null || request.getQuantity() < 1) {
-      throw new IllegalArgumentException("Số lượng phải lớn hơn 0");
+      throw new IllegalArgumentException(ApiMessages.QUANTITY_MUST_BE_POSITIVE);
     }
 
-    Optional<Product> pOpt = productRepository.findById(request.getProductId());
-    if (pOpt.isEmpty()) {
-      throw new ProductNotFoundException("Sản phẩm không tồn tại");
+    Optional<Product> productOptional = productRepository.findById(request.getProductId());
+    if (productOptional.isEmpty()) {
+      throw new ProductNotFoundException(ApiMessages.PRODUCT_NOT_FOUND);
     }
 
-    Product p = pOpt.get();
-    if (!"ACTIVE".equalsIgnoreCase(p.getStatus())) {
-      throw new IllegalArgumentException("Sản phẩm không còn được bán");
+    Product product = productOptional.get();
+    if (!"ACTIVE".equalsIgnoreCase(product.getStatus())) {
+      throw new IllegalArgumentException(ApiMessages.PRODUCT_INACTIVE);
     }
+
     Optional<CartItem> existing = cartRepository.findByUserIdAndProductId(userId, request.getProductId());
     int currentQuantity = existing.map(CartItem::getQuantity).orElse(0);
     int nextQuantity = currentQuantity + request.getQuantity();
-    if (nextQuantity > p.getStock()) {
-      throw new InsufficientStockException("Tồn kho không đủ");
+    if (nextQuantity > product.getStock()) {
+      throw new InsufficientStockException(ApiMessages.INSUFFICIENT_STOCK);
     }
 
     CartItem item;
@@ -50,7 +52,7 @@ public class CartService {
       item = existing.get();
       item.setQuantity(nextQuantity);
     } else {
-      item = new CartItem(p.getId(), request.getQuantity(), p.getName(), p.getPrice());
+      item = new CartItem(product.getId(), request.getQuantity(), product.getName(), product.getPrice());
     }
 
     item.setUserId(userId);
@@ -63,20 +65,26 @@ public class CartService {
 
   public CartItem updateQuantity(String userId, String productId, int quantity) {
     if (quantity < 1) {
-      throw new IllegalArgumentException("Số lượng phải lớn hơn 0");
+      throw new IllegalArgumentException(ApiMessages.QUANTITY_MUST_BE_POSITIVE);
     }
-    Optional<CartItem> opt = cartRepository.findByUserIdAndProductId(userId, productId);
-    if (opt.isEmpty()) {
+
+    Optional<CartItem> itemOptional = cartRepository.findByUserIdAndProductId(userId, productId);
+    if (itemOptional.isEmpty()) {
       return null;
     }
-    Product product = productRepository.findById(productId).orElseThrow(() -> new ProductNotFoundException("Sản phẩm không tồn tại"));
+
+    Product product =
+        productRepository
+            .findById(productId)
+            .orElseThrow(() -> new ProductNotFoundException(ApiMessages.PRODUCT_NOT_FOUND));
     if (!"ACTIVE".equalsIgnoreCase(product.getStatus())) {
-      throw new IllegalArgumentException("Sản phẩm không còn được bán");
+      throw new IllegalArgumentException(ApiMessages.PRODUCT_INACTIVE);
     }
     if (quantity > product.getStock()) {
-      throw new InsufficientStockException("Tồn kho không đủ");
+      throw new InsufficientStockException(ApiMessages.INSUFFICIENT_STOCK);
     }
-    CartItem item = opt.get();
+
+    CartItem item = itemOptional.get();
     item.setQuantity(quantity);
     return cartRepository.save(item);
   }

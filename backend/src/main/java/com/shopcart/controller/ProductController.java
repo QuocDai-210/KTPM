@@ -16,8 +16,9 @@ public class ProductController {
   }
 
   @GetMapping("/api/products")
-  public ResponseEntity<?> getProducts(@RequestHeader(value = "Authorization", required = false) String auth) {
-    if (auth == null) {
+  public ResponseEntity<?> getProducts(
+      @RequestHeader(value = "Authorization", required = false) String auth) {
+    if (AuthSupport.extractUserId(auth).isEmpty()) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
     return ResponseEntity.ok(productRepository.findAll());

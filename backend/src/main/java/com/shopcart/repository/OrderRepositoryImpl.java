@@ -41,4 +41,9 @@ public class OrderRepositoryImpl implements OrderRepository {
   public Optional<Coupon> findCoupon(String code) {
     return Optional.ofNullable(coupons.get(code));
   }
+
+  void clear() {
+    orders.clear();
+    sequence.set(1000);
+  }
 }

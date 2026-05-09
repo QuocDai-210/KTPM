@@ -18,7 +18,10 @@ public class CartRepositoryImpl implements CartRepository {
 
   @Override
   public CartItem save(CartItem item) {
-    String userId = item.getUserId() == null ? "user01" : item.getUserId();
+    String userId = item.getUserId();
+    if (userId == null || userId.isBlank()) {
+      throw new IllegalArgumentException("Cart item userId is required");
+    }
     db.put(key(userId, item.getProductId()), item);
     return item;
   }
@@ -39,5 +42,9 @@ public class CartRepositoryImpl implements CartRepository {
         .filter(entry -> entry.getKey().startsWith(userId + ":"))
         .map(Map.Entry::getValue)
         .collect(Collectors.toList());
+  }
+
+  void clear() {
+    db.clear();
   }
 }
