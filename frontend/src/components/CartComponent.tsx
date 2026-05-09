@@ -10,6 +10,24 @@ const couponCatalog: Record<string, CouponInfo> = {
 
 const formatMoney = (value: number) => new Intl.NumberFormat('vi-VN').format(value);
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'response' in error &&
+    typeof error.response === 'object' &&
+    error.response !== null &&
+    'data' in error.response &&
+    typeof error.response.data === 'object' &&
+    error.response.data !== null &&
+    'message' in error.response.data &&
+    typeof error.response.data.message === 'string'
+  ) {
+    return error.response.data.message;
+  }
+  return fallback;
+};
+
 type CartComponentProps = {
   userId: string;
   onCartCountChange?: (count: number) => void;
@@ -77,7 +95,7 @@ export default function CartComponent({ userId, onCartCountChange }: CartCompone
           </div>
         )}
         <div data-testid="empty-cart-message" className="empty-state">
-          Gio hang trong
+          Giỏ hàng trống
         </div>
       </section>
     );
@@ -87,19 +105,25 @@ export default function CartComponent({ userId, onCartCountChange }: CartCompone
     setFormMessage(null);
     cartService
       .removeFromCart(userId, productId)
-      .then((response) => syncItems(Array.isArray(response.items) ? response.items : []));
+      .then((response) => syncItems(Array.isArray(response.items) ? response.items : []))
+      .catch((error) => {
+        setFormMessage(getErrorMessage(error, 'Không thể xóa sản phẩm khỏi giỏ'));
+      });
   };
 
   const handleChange = (productId: string, value: string) => {
     const quantity = parseInt(value || '0', 10);
     if (!Number.isInteger(quantity) || quantity < 1) {
-      setFormMessage('So luong phai lon hon 0');
+      setFormMessage('Số lượng phải lớn hơn 0');
       return;
     }
     setFormMessage(null);
     cartService
       .updateQuantity(userId, productId, quantity)
-      .then((response) => syncItems(Array.isArray(response.items) ? response.items : []));
+      .then((response) => syncItems(Array.isArray(response.items) ? response.items : []))
+      .catch((error) => {
+        setFormMessage(getErrorMessage(error, 'Không thể cập nhật giỏ hàng'));
+      });
   };
 
   const handleApplyCoupon = () => {
@@ -107,18 +131,18 @@ export default function CartComponent({ userId, onCartCountChange }: CartCompone
     const coupon = couponCatalog[normalized];
     if (!coupon) {
       setAppliedCoupon(undefined);
-      setFormMessage('Ma giam gia khong hop le');
+      setFormMessage('Mã giảm giá không hợp lệ');
       return;
     }
     setAppliedCoupon(coupon);
     setCouponCode(normalized);
-    setFormMessage(`Da ap dung ma ${normalized}`);
+    setFormMessage(`Đã áp dụng mã ${normalized}`);
   };
 
   const handleCheckout = async () => {
     setOrderMessage(null);
     if (!shippingAddress.trim()) {
-      setFormMessage('Vui long nhap dia chi giao hang');
+      setFormMessage('Vui lòng nhập địa chỉ giao hàng');
       return;
     }
 
@@ -138,13 +162,13 @@ export default function CartComponent({ userId, onCartCountChange }: CartCompone
       );
 
       setFormMessage(null);
-      setOrderMessage(`Dat hang thanh cong: ${order.orderId}`);
+      setOrderMessage(`Đặt hàng thành công: ${order.orderId}`);
       setAppliedCoupon(undefined);
       setCouponCode('');
       setShippingAddress('');
       syncItems([]);
-    } catch {
-      setFormMessage('Khong the dat hang');
+    } catch (error) {
+      setFormMessage(getErrorMessage(error, 'Không thể đặt hàng'));
     }
   };
 
@@ -152,7 +176,7 @@ export default function CartComponent({ userId, onCartCountChange }: CartCompone
     <section className="cart-container">
       <div className="section-heading">
         <p>Checkout</p>
-        <h1>Gio hang cua ban</h1>
+        <h1>Giỏ hàng của bạn</h1>
       </div>
 
       <div className="cart-layout">
@@ -165,7 +189,7 @@ export default function CartComponent({ userId, onCartCountChange }: CartCompone
               </div>
               <input
                 data-testid={`quantity-input-${item.productId}`}
-                aria-label={`So luong ${item.productName}`}
+                aria-label={`Số lượng ${item.productName}`}
                 type="number"
                 min="1"
                 value={item.quantity}
@@ -175,7 +199,7 @@ export default function CartComponent({ userId, onCartCountChange }: CartCompone
                 data-testid={`delete-product-${item.productId}`}
                 onClick={() => handleDelete(item.productId)}
               >
-                Xoa
+                Xóa
               </button>
             </article>
           ))}
@@ -183,23 +207,23 @@ export default function CartComponent({ userId, onCartCountChange }: CartCompone
 
         <aside className="checkout-panel">
           <div className="summary-line">
-            <span>Tam tinh</span>
+            <span>Tạm tính</span>
             <strong data-testid="cart-subtotal">{formatMoney(price.subtotal)}</strong>
           </div>
           <div className="summary-line">
-            <span>Giam gia</span>
+            <span>Giảm giá</span>
             <strong>{formatMoney(price.discount)}</strong>
           </div>
           <div className="summary-line">
-            <span>Phi van chuyen</span>
+            <span>Phí vận chuyển</span>
             <strong data-testid="shipping-fee">{formatMoney(price.shipping)}</strong>
           </div>
           <div className="summary-line total">
-            <span>Tong gio hang</span>
+            <span>Tổng giỏ hàng</span>
             <strong data-testid="cart-total">{formatMoney(price.subtotal)}</strong>
           </div>
           <div className="summary-line total">
-            <span>Can thanh toan</span>
+            <span>Cần thanh toán</span>
             <strong data-testid="checkout-total">{formatMoney(price.total)}</strong>
           </div>
           <div data-testid="total-display" className="sr-only">
@@ -209,30 +233,30 @@ export default function CartComponent({ userId, onCartCountChange }: CartCompone
           <div className="coupon-row">
             <input
               data-testid="coupon-input"
-              placeholder="Ma giam gia"
+              placeholder="Mã giảm giá"
               value={couponCode}
               onChange={(event) => setCouponCode(event.target.value)}
             />
             <button data-testid="apply-coupon-btn" onClick={handleApplyCoupon}>
-              Ap dung
+              Áp dụng
             </button>
           </div>
 
           <input
             data-testid="shipping-address-input"
-            placeholder="Dia chi giao hang"
+            placeholder="Địa chỉ giao hàng"
             value={shippingAddress}
             onChange={(event) => setShippingAddress(event.target.value)}
           />
           <button data-testid="checkout-btn" className="secondary-action">
-            Thanh toan
+            Thanh toán
           </button>
           <button
             data-testid="place-order-btn"
             className="primary-action"
             onClick={handleCheckout}
           >
-            Dat hang
+            Đặt hàng
           </button>
 
           {formMessage && (

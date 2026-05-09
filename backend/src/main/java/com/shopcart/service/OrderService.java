@@ -59,7 +59,10 @@ public class OrderService {
   }
 
   public Long calculateOrderTotal(OrderRequest request) {
-    validateOrderContent(request);
+    validateOrderRequest(request, false);
+    if (request.getShippingFee() != null && request.getShippingFee() < 0) {
+      throw new IllegalArgumentException(ApiMessages.SHIPPING_FEE_NEGATIVE);
+    }
 
     long subtotal = 0L;
     for (OrderItemRequest itemRequest : request.getItems()) {
@@ -137,23 +140,14 @@ public class OrderService {
   }
 
   private void validateCreateOrderRequest(OrderRequest request) {
-    validateOrderContent(request);
+    validateOrderRequest(request, true);
+    if (request.getShippingFee() != null && request.getShippingFee() < 0) {
+      throw new IllegalArgumentException(ApiMessages.SHIPPING_FEE_NEGATIVE);
+    }
     for (OrderItemRequest itemRequest : request.getItems()) {
-      if (itemRequest.getQuantity() == null || itemRequest.getQuantity() < 1) {
-        throw new IllegalArgumentException(ApiMessages.QUANTITY_MUST_BE_POSITIVE);
-      }
       if (!inventoryService.isAvailable(itemRequest.getProductId(), itemRequest.getQuantity())) {
         throw new InsufficientStockException(ApiMessages.INSUFFICIENT_STOCK);
       }
-    }
-  }
-
-  private void validateOrderContent(OrderRequest request) {
-    if (request.getItems() == null || request.getItems().isEmpty()) {
-      throw new IllegalArgumentException(ApiMessages.ORDER_ITEMS_REQUIRED);
-    }
-    if (request.getShippingFee() != null && request.getShippingFee() < 0) {
-      throw new IllegalArgumentException(ApiMessages.SHIPPING_FEE_NEGATIVE);
     }
   }
 

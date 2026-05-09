@@ -48,7 +48,7 @@ function App() {
       setNotice('Them vao gio hang thanh cong');
       setPage('cart');
     } catch (error) {
-      setNotice('Khong the them san pham vao gio');
+      setNotice('Không thể thêm sản phẩm vào giỏ');
       console.error('Error adding to cart:', error);
     }
   };
@@ -56,13 +56,21 @@ function App() {
   return (
     <div id="app-shell">
       <nav className="topbar" aria-label="ShopCart navigation">
-        <button className={page === 'products' ? 'active' : ''} onClick={() => setPage('products')}>
-          San pham
+        <button
+          aria-label="San pham"
+          className={page === 'products' ? 'active' : ''}
+          onClick={() => setPage('products')}
+        >
+          Sản phẩm
         </button>
-        <button className={page === 'cart' ? 'active' : ''} onClick={() => setPage('cart')}>
-          Gio hang
+        <button
+          aria-label="Giỏ hàng"
+          className={page === 'cart' ? 'active' : ''}
+          onClick={() => setPage('cart')}
+        >
+          Giỏ hàng
           {cartCount > 0 && (
-            <span data-testid="cart-badge" className="cart-badge">
+            <span aria-hidden="true" data-testid="cart-badge" className="cart-badge">
               {cartCount}
             </span>
           )}
