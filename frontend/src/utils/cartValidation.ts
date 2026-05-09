@@ -40,7 +40,8 @@ export interface CartTotal {
 export function calculateCartTotal(
   items: Array<{ price: number; quantity: number }>,
   discountPercent?: number,
-  shipping: number = 0
+  discountFixed?: number,
+  shipping: number = 0,
 ): CartTotal {
   // Calculate subtotal
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -49,6 +50,9 @@ export function calculateCartTotal(
   let discount = 0;
   if (discountPercent) {
     discount = subtotal * (discountPercent / 100);
+  }
+  else if (discountFixed) {
+    discount = discountFixed;
   }
 
   // Ensure discount doesn't exceed subtotal

@@ -81,7 +81,7 @@ describe('Cart Validation Tests', () => {
   describe('calculateCartTotal', () => {
     test('TC1: Giỏ hàng rỗng', () => {
       const items: Array<{ price: number; quantity: number }> = [];
-      const result = calculateCartTotal(items, undefined, 0);
+      const result = calculateCartTotal(items, undefined, undefined, 0);
 
       expect(result.subtotal).toBe(0);
       expect(result.discount).toBe(0);
@@ -93,7 +93,7 @@ describe('Cart Validation Tests', () => {
         { price: 15000000, quantity: 2 },
         { price: 500000, quantity: 1 },
       ];
-      const result = calculateCartTotal(items, undefined, 0);
+      const result = calculateCartTotal(items, undefined, undefined, 0);
 
       expect(result.subtotal).toBe(30500000);
       expect(result.discount).toBe(0);
@@ -102,7 +102,7 @@ describe('Cart Validation Tests', () => {
 
     test('TC3: Áp dụng mã giảm giá', () => {
       const items = [{ price: 1000000, quantity: 2 }];
-      const result = calculateCartTotal(items, 10, 0);
+      const result = calculateCartTotal(items, 10, undefined, 0);
 
       expect(result.subtotal).toBe(2000000);
       expect(result.discount).toBe(200000);
@@ -111,7 +111,7 @@ describe('Cart Validation Tests', () => {
 
     test('TC4: Tính lại tổng giá sau khi xóa sản phẩm', () => {
       const itemsAfterRemove = [{ price: 15000000, quantity: 2 }];
-      const result = calculateCartTotal(itemsAfterRemove, undefined, 0);
+      const result = calculateCartTotal(itemsAfterRemove, undefined, undefined, 0);
 
       expect(result.subtotal).toBe(30000000);
       expect(result.total).toBe(30000000);

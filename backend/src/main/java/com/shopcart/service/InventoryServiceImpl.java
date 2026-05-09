@@ -1,8 +1,8 @@
 package com.shopcart.service;
 
-import com.shopcart.repository.ProductRepository;
-import java.util.Optional;
 import org.springframework.stereotype.Service;
+
+import com.shopcart.repository.ProductRepository;
 
 @Service
 public class InventoryServiceImpl implements InventoryService {

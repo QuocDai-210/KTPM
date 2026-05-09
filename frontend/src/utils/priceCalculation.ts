@@ -51,33 +51,7 @@ export function calculateOrderPrice(
   };
 }
 
-export function validateCoupon(
-  coupon: CouponInfo,
-  orderValue: number
-): { valid: boolean; message?: string } {
-  // Check minimum order value
-  if (coupon.minOrderValue && orderValue < coupon.minOrderValue) {
-    return {
-      valid: false,
-      message: `Đơn hàng phải tối thiểu ${coupon.minOrderValue}đ`,
-    };
-  }
-
-  // Check expiry date
-  if (coupon.expiryDate) {
-    const expiryDate = new Date(coupon.expiryDate);
-    if (new Date() > expiryDate) {
-      return {
-        valid: false,
-        message: 'Mã giảm giá đã hết hạn',
-      };
-    }
-  }
-
-  return { valid: true };
-}
-
-export function checkInventoryAvailabilityForOrder(
+export function checkInventoryAvailability(
   items: Array<{ productId: string; quantity: number; stock: number }>
 ): { available: boolean; unavailableProducts?: string[] } {
   const unavailable = items

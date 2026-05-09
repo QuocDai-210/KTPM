@@ -69,7 +69,7 @@ class OrderServiceMockTest {
     when(productRepository.findById("P001")).thenReturn(Optional.of(new Product("P001", "Laptop Dell", 15000000L, 10)));
     when(productRepository.findById("P002")).thenReturn(Optional.of(new Product("P002", "Mouse", 500000L, 20)));
 
-    Coupon coupon = new Coupon("SALE10", 10L, null, LocalDate.now().plusDays(5).toString());
+    Coupon coupon = new Coupon("SALE10", "PERCENT", 10L, null, LocalDate.now().plusDays(5).toString());
     when(orderRepository.findCoupon("SALE10")).thenReturn(Optional.of(coupon));
   }
 
@@ -121,22 +121,22 @@ class OrderServiceMockTest {
   }
 
   @Test
-  @DisplayName("Mock: calculateOrderTotal với percent coupon")
-  void testCalculateOrderTotalWithPercentCoupon() {
-    when(orderRepository.findCoupon("SALE5"))
-        .thenReturn(Optional.of(new Coupon("SALE5", 5L, null, LocalDate.now().plusDays(5).toString())));
+  @DisplayName("Mock: calculateOrderTotal với fixed coupon")
+  void testCalculateOrderTotalWithFixedCoupon() {
+    when(orderRepository.findCoupon("FIXED100K"))
+        .thenReturn(Optional.of(new Coupon("FIXED100K", "FIXED", 100000L, null, LocalDate.now().plusDays(5).toString())));
 
-    OrderRequest percentCouponRequest = OrderRequest.builder()
+    OrderRequest fixedCouponRequest = OrderRequest.builder()
         .userId("user01")
         .items(List.of(
             new OrderItemRequest("P001", 1, 0L),
             new OrderItemRequest("P002", 1, 0L)))
-        .couponCode("SALE5")
+        .couponCode("FIXED100K")
         .shippingFee(50000L)
         .build();
 
-    long total = orderService.calculateOrderTotal(percentCouponRequest);
-    assertEquals(14775000L, total);
+    long total = orderService.calculateOrderTotal(fixedCouponRequest);
+    assertEquals(15450000L, total);
   }
 
   @Test
