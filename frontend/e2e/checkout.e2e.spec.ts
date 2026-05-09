@@ -25,7 +25,7 @@ test.describe('Checkout E2E Tests', () => {
       if (addButtons.length > 0) {
         await addButtons[0].click();
       }
-    } catch (e) {
+    } catch {
       // Products may not be available, continue with cart
     }
 
@@ -209,7 +209,8 @@ test.describe('Checkout E2E Tests', () => {
 
     if (await placeOrderBtn.isVisible()) {
       // Initially button might be disabled (missing required fields)
-      let isDisabled = await placeOrderBtn.isDisabled();
+      const initiallyDisabled = await placeOrderBtn.isDisabled();
+      expect(typeof initiallyDisabled).toBe('boolean');
       
       // Fill required fields
       const addressInput = page.locator('[data-testid="address-input"]');
@@ -218,7 +219,7 @@ test.describe('Checkout E2E Tests', () => {
         
         // After filling, button might be enabled
         await page.waitForTimeout(500);
-        isDisabled = await placeOrderBtn.isDisabled();
+        const isDisabled = await placeOrderBtn.isDisabled();
         
         // Should be enabled after valid input
         if (!isDisabled) {

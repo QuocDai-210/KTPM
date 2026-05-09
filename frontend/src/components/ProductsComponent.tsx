@@ -54,7 +54,7 @@ const ProductsComponent = ({
   };
 
   const handleAddToCart = (product: cartService.Product) => {
-    const quantity = quantities[product.id] || 1;
+    const quantity = quantities[product.id] ?? 1;
     if (quantity < 1) {
       setError('Số lượng phải lớn hơn 0');
       return;
@@ -66,7 +66,7 @@ const ProductsComponent = ({
     onAddToCart?.(product.id, quantity);
     setQuantities((prev) => ({
       ...prev,
-      [product.id]: 0,
+      [product.id]: 1,
     }));
   };
 
@@ -107,7 +107,7 @@ const ProductsComponent = ({
                 type="number"
                 min="1"
                 max={product.stock}
-                value={quantities[product.id] || 1}
+                value={quantities[product.id] ?? 1}
                 onChange={(e) =>
                   handleQuantityChange(product.id, parseInt(e.target.value) || 0)
                 }

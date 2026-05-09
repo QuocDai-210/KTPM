@@ -188,7 +188,6 @@ export default function CartComponent({ userId }: { userId: string }) {
           <button data-testid="place-order-btn" className="primary-action" onClick={handleCheckout}>Đặt hàng</button>
 
           {formMessage && <div data-testid="form-message" className="notice inline">{formMessage}</div>}
-          {orderMessage && <div data-testid="order-success" className="success">{orderMessage}</div>}
         </aside>
       </div>
     </section>

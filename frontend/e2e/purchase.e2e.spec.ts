@@ -1,7 +1,11 @@
 import { test, expect } from '@playwright/test';
+import CheckoutPage from './pages/CheckoutPage';
 
 test.describe('Purchase E2E Tests', () => {
+  let checkoutPage: CheckoutPage;
+
   test.beforeEach(async ({ page }) => {
+    checkoutPage = new CheckoutPage(page);
     await page.route('**/api/products', async (route) => {
       await route.fulfill({ json: [{ id: 'P001', name: 'Laptop Dell', price: 15000000, stock: 10 }] });
     });
@@ -23,9 +27,10 @@ test.describe('Purchase E2E Tests', () => {
 
   test('TC1: Đặt hàng thành công', async ({ page }) => {
     await expect(page.getByText('Laptop Dell')).toBeVisible();
-    await page.getByTestId('shipping-address-input').fill('123 Nguyen Trai, HCM');
-    await page.getByTestId('place-order-btn').click();
-    await expect(page.getByTestId('order-success')).toContainText('ORD-E2E');
+    await checkoutPage.goToCheckout();
+    await checkoutPage.shippingAddressInput.fill('123 Nguyen Trai, HCM');
+    await checkoutPage.placeOrder();
+    await expect(checkoutPage.successMessage).toContainText('ORD-E2E');
   });
 
   test('TC2: Kiểm tra tính toán giá chính xác', async ({ page }) => {
@@ -35,12 +40,11 @@ test.describe('Purchase E2E Tests', () => {
   });
 
   test('TC3: Checkout flow hoàn chỉnh', async ({ page }) => {
-    await page.getByTestId('coupon-input').fill('SALE10');
-    await page.getByTestId('apply-coupon-btn').click();
-    await expect(page.getByTestId('form-message')).toContainText('SALE10');
+    await checkoutPage.applyCoupon('SALE10');
+    await expect(checkoutPage.formMessage).toContainText('SALE10');
     await expect(page.getByTestId('checkout-total')).toContainText('13.550.000');
-    await page.getByTestId('shipping-address-input').fill('456 Le Loi, HCM');
-    await page.getByTestId('place-order-btn').click();
-    await expect(page.getByTestId('order-success')).toContainText('Đặt hàng thành công');
+    await checkoutPage.shippingAddressInput.fill('456 Le Loi, HCM');
+    await checkoutPage.placeOrder();
+    await expect(checkoutPage.successMessage).toContainText('Đặt hàng thành công');
   });
 });

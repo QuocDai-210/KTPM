@@ -86,6 +86,20 @@ describe('Purchase Mock Tests', () => {
         expect(screen.getByTestId('total-display')).toHaveTextContent('27.050.000');
       });
     });
+
+    test('Mock: Hiển thị lỗi mặc định khi apply coupon thất bại không có message', async () => {
+      vi.mocked(orderService.applyCoupon).mockRejectedValue({});
+
+      render(<CheckoutPage cart={{
+        items: [{ productId: 'P001', name: 'Laptop', price: 15000000, quantity: 1 }],
+        total: 15000000,
+      }} />);
+
+      fireEvent.change(screen.getByTestId('coupon-input'), { target: { value: 'BAD' } });
+      fireEvent.click(screen.getByTestId('apply-coupon-btn'));
+
+      expect(await screen.findByText('Không thể áp dụng mã giảm giá')).toBeInTheDocument();
+    });
   });
 
   describe('Mock: Out of Stock', () => {
@@ -116,6 +130,23 @@ describe('Purchase Mock Tests', () => {
         expect(orderService.createOrder).not.toHaveBeenCalled();
         expect(screen.getByText(/không đủ tồn kho/i)).toBeInTheDocument();
       });
+    });
+
+    test('Mock: Hết hàng dùng thông báo mặc định nếu API không trả message', async () => {
+      const mockCartData = {
+        items: [
+          { productId: 'P001', name: 'Laptop', price: 15000000, quantity: 5 },
+        ],
+        total: 75000000,
+      };
+
+      vi.mocked(inventoryService.checkStock).mockResolvedValue({ available: false });
+
+      render(<CheckoutPage cart={mockCartData} />);
+
+      fireEvent.click(screen.getByTestId('place-order-btn'));
+
+      expect(await screen.findByText('Không đủ tồn kho')).toBeInTheDocument();
     });
   });
 
@@ -151,6 +182,22 @@ describe('Purchase Mock Tests', () => {
           })
         );
       });
+    });
+  });
+
+  describe('Mock: Checkout Service Failure', () => {
+    test('Mock: Hiển thị lỗi khi createOrder thất bại', async () => {
+      vi.mocked(inventoryService.checkStock).mockResolvedValue({ available: true });
+      vi.mocked(orderService.createOrder).mockRejectedValue(new Error('server'));
+
+      render(<CheckoutPage cart={{
+        items: [{ productId: 'P001', name: 'Laptop', price: 15000000, quantity: 1 }],
+        total: 15000000,
+      }} />);
+
+      fireEvent.click(screen.getByTestId('place-order-btn'));
+
+      expect(await screen.findByText('Không thể đặt hàng')).toBeInTheDocument();
     });
   });
 
