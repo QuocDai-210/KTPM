@@ -1,16 +1,29 @@
 package com.shopcart.service;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.shopcart.dto.OrderItemRequest;
 import com.shopcart.dto.OrderRequest;
@@ -23,18 +36,6 @@ import com.shopcart.entity.Product;
 import com.shopcart.exception.InsufficientStockException;
 import com.shopcart.repository.OrderRepository;
 import com.shopcart.repository.ProductRepository;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 @DisplayName("Order Service Mock Tests")
 @ExtendWith(MockitoExtension.class)
@@ -61,6 +62,8 @@ class OrderServiceMockTest {
         ))
         .couponCode("SALE10")
         .shippingFee(50000L)
+        .shippingAddress("123 Test Street, HCM")
+        .paymentMethod("COD")
         .build();
 
     when(productRepository.findById("P001")).thenReturn(Optional.of(new Product("P001", "Laptop Dell", 15000000L, 10)));

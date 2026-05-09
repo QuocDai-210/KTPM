@@ -67,6 +67,12 @@ class OrderServiceTest {
         .thenReturn(Optional.of(new com.shopcart.entity.Coupon("SAVE500", "FIXED", 500000L, 0L, "2026-12-31")));
   }
 
+  private OrderRequest withCheckoutInfo(OrderRequest request) {
+    request.setShippingAddress("123 Test Street, HCM");
+    request.setPaymentMethod("COD");
+    return request;
+  }
+
   @Test
   @DisplayName("TC1: Tạo đơn hàng thành công")
   void testCreateOrderSuccess() {
@@ -92,7 +98,7 @@ class OrderServiceTest {
         });
 
     // Act
-    OrderResponse response = orderService.createOrder(request);
+    OrderResponse response = orderService.createOrder(withCheckoutInfo(request));
 
     // Assert
     assertNotNull(response);
@@ -184,7 +190,7 @@ class OrderServiceTest {
     when(inventoryService.isAvailable("P001", 10)).thenReturn(false);
 
     // Act & Assert
-    assertThrows(InsufficientStockException.class, () -> orderService.createOrder(request));
+    assertThrows(InsufficientStockException.class, () -> orderService.createOrder(withCheckoutInfo(request)));
     verify(orderRepository, never()).save(any(Order.class));
   }
 
@@ -203,7 +209,7 @@ class OrderServiceTest {
     when(inventoryService.isAvailable("P001", 2)).thenReturn(true);
 
     // Act & Assert
-    assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(request));
+    assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(withCheckoutInfo(request)));
     verify(orderRepository, never()).save(any(Order.class));
   }
 
@@ -234,7 +240,7 @@ class OrderServiceTest {
         });
 
     // Act
-    OrderResponse response = orderService.createOrder(request);
+    OrderResponse response = orderService.createOrder(withCheckoutInfo(request));
 
     // Assert
     assertNotNull(response.getOrderId());
@@ -266,7 +272,7 @@ class OrderServiceTest {
         });
 
     // Act
-    OrderResponse response = orderService.createOrder(request);
+    OrderResponse response = orderService.createOrder(withCheckoutInfo(request));
 
     // Assert
     assertNotNull(response);
@@ -298,7 +304,7 @@ class OrderServiceTest {
         });
 
     // Act
-    OrderResponse response = orderService.createOrder(request);
+    OrderResponse response = orderService.createOrder(withCheckoutInfo(request));
 
     // Assert
     assertNotNull(response);
@@ -328,7 +334,7 @@ class OrderServiceTest {
         });
 
     // Act
-    orderService.createOrder(request);
+    orderService.createOrder(withCheckoutInfo(request));
 
     // Assert
     verify(inventoryService, times(1)).decreaseStock("P001", 2);
@@ -347,7 +353,7 @@ class OrderServiceTest {
             .build();
 
     // Act & Assert
-    assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(request));
+    assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(withCheckoutInfo(request)));
     verify(orderRepository, never()).save(any(Order.class));
   }
 
@@ -363,7 +369,7 @@ class OrderServiceTest {
             .build();
 
     // Act & Assert
-    assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(request));
+    assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(withCheckoutInfo(request)));
     verify(orderRepository, never()).save(any(Order.class));
   }
 
@@ -388,7 +394,7 @@ class OrderServiceTest {
         });
 
     // Act
-    OrderResponse response = orderService.createOrder(request);
+    OrderResponse response = orderService.createOrder(withCheckoutInfo(request));
 
     // Assert
     assertEquals(OrderStatus.PENDING, response.getStatus());
@@ -415,9 +421,41 @@ class OrderServiceTest {
         });
 
     // Act
-    OrderResponse response = orderService.createOrder(request);
+    OrderResponse response = orderService.createOrder(withCheckoutInfo(request));
 
     // Assert
     assertNotNull(response.getOrderId());
+  }
+
+  @Test
+  @DisplayName("TC15: Missing shipping address rejection")
+  void testMissingShippingAddress() {
+    OrderRequest request =
+        OrderRequest.builder()
+            .userId("user01")
+            .items(List.of(new OrderItemRequest("P001", 1, 15000000L)))
+            .shippingFee(50000L)
+            .paymentMethod("COD")
+            .build();
+
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(request));
+    assertEquals("Địa chỉ giao hàng không được để trống", ex.getMessage());
+    verify(orderRepository, never()).save(any(Order.class));
+  }
+
+  @Test
+  @DisplayName("TC16: Missing payment method rejection")
+  void testMissingPaymentMethod() {
+    OrderRequest request =
+        OrderRequest.builder()
+            .userId("user01")
+            .items(List.of(new OrderItemRequest("P001", 1, 15000000L)))
+            .shippingFee(50000L)
+            .shippingAddress("123 Test Street, HCM")
+            .build();
+
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> orderService.createOrder(request));
+    assertEquals("Phương thức thanh toán không được để trống", ex.getMessage());
+    verify(orderRepository, never()).save(any(Order.class));
   }
 }

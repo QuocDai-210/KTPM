@@ -37,29 +37,27 @@ Dự án ShopCart là một ứng dụng web thương mại điện tử phục 
 ShopCart_FE_BE/
 ├── frontend/                 # React 19 + Vite application
 │   ├── src/
-│   │   ├── components/       # React components (Cart, Checkout)
+│   │   ├── components/       # Cart, Checkout, Inventory components
 │   │   ├── services/         # API services (cartService, orderService)
 │   │   ├── utils/            # Validation, price calculation utilities
 │   │   ├── hooks/            # Custom React hooks
-│   │   └── tests/            # Unit tests
+│   │   └── tests/            # Test files (Vitest)
 │   ├── e2e/                  # Playwright E2E tests
 │   ├── vite.config.ts
 │   ├── playwright.config.ts
 │   └── package.json
 │
 ├── backend/
-│   ├── shopcart/              # Spring Boot API
-│   │   ├── src/main/java/com/shopcart/
-│   │   │   ├── controller/    # CartController, OrderController
-│   │   │   ├── service/       # Business logic services
-│   │   │   ├── dto/           # Data Transfer Objects
-│   │   │   ├── entity/        # Database entities
-│   │   │   ├── repository/    # Data access layers
-│   │   │   └── exception/     # Custom exceptions
-│   │   ├── src/test/          # Unit and integration tests
-│   │   └── pom.xml
-│   │
-│   └── shopcart-test/        # Reference tests (test specifications)
+│   ├── src/main/java/com/shopcart/
+│   │   ├── controller/        # CartController, ProductController, OrderController
+│   │   ├── service/           # Business logic services
+│   │   ├── dto/               # Data Transfer Objects
+│   │   ├── entity/            # Database entities
+│   │   ├── repository/        # Data access layers
+│   │   └── exception/         # Custom exceptions
+│   ├── src/test/              # Test files (JUnit 5 + Mockito)
+│   ├── performance-tests.k6.js
+│   └── pom.xml
 │
 └── .github/workflows/        # CI/CD pipelines
     └── ci.yml
@@ -82,8 +80,7 @@ npm install
 ### Backend Setup
 
 ```bash
-cd backend/shopcart
-# Maven wrapper sẽ tự động download Maven nếu cần
+cd backend
 ./mvnw clean install
 ```
 
@@ -100,7 +97,7 @@ npm run dev
 ### Backend Development
 
 ```bash
-cd backend/shopcart
+cd backend
 ./mvnw spring-boot:run
 # API sẽ chạy trên http://localhost:8080
 ```
@@ -121,6 +118,7 @@ npm run test -- --coverage # Run with coverage report
 ```bash
 cd frontend
 npm run test:e2e          # Run all E2E tests
+npm run test:e2e:all      # Run E2E tests on Chromium, Firefox, and WebKit
 npm run test:e2e:ui       # Run with interactive UI
 npm run test:e2e:debug    # Run in debug mode
 npm run test:e2e:report   # Show HTML report
@@ -129,7 +127,7 @@ npm run test:e2e:report   # Show HTML report
 ### Backend Unit Tests
 
 ```bash
-cd backend/shopcart
+cd backend
 ./mvnw test               # Run all tests
 ./mvnw test -Dtest=CartServiceTest  # Run specific test
 ./mvnw clean package      # Build and run tests
@@ -139,10 +137,25 @@ cd backend/shopcart
 
 ```bash
 # Local CI/CD simulation
-cd backend/shopcart && ./mvnw test
-cd ../.. && cd frontend && npm install && npm run test -- -- run
+cd backend && ./mvnw test
+cd ../frontend && npm install && npm run test -- -- run
 npm run test:e2e
 ```
+
+### Performance Tests
+
+```bash
+cd backend
+k6 run performance-tests.k6.js
+```
+
+### Reports
+
+- Backend coverage: `backend/target/site/jacoco/index.html`
+- Frontend coverage: `frontend/coverage/index.html`
+- Playwright report: `frontend/playwright-report/index.html`
+- Test case documentation: `docs/TESTCASES.md`
+- Performance and security documentation: `docs/ADVANCED_TESTING.md`
 
 ## 📋 Các Tính Năng
 

@@ -72,6 +72,34 @@ public class OrderService {
     return subtotal - discount + shipping;
   }
 
+  private void validateOrderRequest(OrderRequest request, boolean requireCheckoutInfo) {
+    if (request == null) {
+      throw new IllegalArgumentException("Đơn hàng không được để trống");
+    }
+    if (request.getItems() == null || request.getItems().isEmpty()) {
+      throw new IllegalArgumentException("Đơn hàng phải có ít nhất một sản phẩm");
+    }
+    if (requireCheckoutInfo) {
+      if (request.getShippingAddress() == null || request.getShippingAddress().isBlank()) {
+        throw new IllegalArgumentException("Địa chỉ giao hàng không được để trống");
+      }
+      if (request.getPaymentMethod() == null || request.getPaymentMethod().isBlank()) {
+        throw new IllegalArgumentException("Phương thức thanh toán không được để trống");
+      }
+    }
+    for (OrderItemRequest it : request.getItems()) {
+      if (it == null) {
+        throw new IllegalArgumentException("Sản phẩm trong đơn hàng không được để trống");
+      }
+      if (it.getProductId() == null || it.getProductId().isBlank()) {
+        throw new IllegalArgumentException("Product ID không được rỗng");
+      }
+      if (it.getQuantity() == null || it.getQuantity() < 1) {
+        throw new IllegalArgumentException("Số lượng phải lớn hơn 0");
+      }
+    }
+  }
+
   public Order getOrderById(String id) {
     return orderRepository.findById(id).orElse(null);
   }

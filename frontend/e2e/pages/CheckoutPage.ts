@@ -1,44 +1,45 @@
-import { test, expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 // Page Object Model for Checkout
 export default class CheckoutPage {
-  private page: Page;
+  readonly page: Page;
+  readonly checkoutBtn: Locator;
+  readonly couponInput: Locator;
+  readonly applyCouponBtn: Locator;
+  readonly placeOrderBtn: Locator;
+  readonly totalDisplay: Locator;
+  readonly successMessage: Locator;
+  readonly shippingAddressInput: Locator;
+  readonly formMessage: Locator;
 
   constructor(page: Page) {
     this.page = page;
+    this.checkoutBtn = page.getByTestId('checkout-btn');
+    this.couponInput = page.getByTestId('coupon-input');
+    this.applyCouponBtn = page.getByTestId('apply-coupon-btn');
+    this.placeOrderBtn = page.getByTestId('place-order-btn');
+    this.totalDisplay = page.getByTestId('total-display');
+    this.successMessage = page.getByTestId('order-success');
+    this.shippingAddressInput = page.getByTestId('shipping-address-input');
+    this.formMessage = page.getByTestId('form-message');
   }
 
   async goToCheckout() {
-    await this.page.click('[data-testid="checkout-btn"]');
-    await this.page.waitForURL('**/checkout');
+    await this.checkoutBtn.click();
+    await expect(this.placeOrderBtn).toBeVisible();
   }
 
   async applyCoupon(code: string) {
-    await this.page.fill('[data-testid="coupon-input"]', code);
-    await this.page.click('[data-testid="apply-coupon-btn"]');
+    await this.couponInput.fill(code);
+    await this.applyCouponBtn.click();
   }
 
   async placeOrder() {
-    await this.page.click('[data-testid="place-order-btn"]');
-    await this.page.waitForSelector('[data-testid="order-success"]');
+    await this.placeOrderBtn.click();
+    await this.successMessage.waitFor();
   }
 
   async getTotalPrice(): Promise<string> {
-    return await this.page.locator('[data-testid="total-display"]').innerText();
+    return await this.totalDisplay.innerText();
   }
 }
-
-test.describe('CheckoutPage', () => {
-  test('Hiển thị tổng giá chính xác', async ({ page }) => {
-    await page.route('**/api/products', async (route) => {
-      await route.fulfill({ json: [{ id: 'P001', name: 'Laptop Dell', price: 15000000, stock: 10 }] });
-    });
-    const checkoutPage = new CheckoutPage(page);
-    await page.goto('http://localhost:5173/checkout');
-    void checkoutPage;
-    
-    // Wait for page to load
-    await page.waitForTimeout(500);
-    await expect(page.locator('main')).toBeVisible();
-  });
-});

@@ -106,18 +106,18 @@ Product Status:
 
 ---
 
-#### **TC_CART_003: Add Product - Invalid Quantity (Zero)**
+#### **TC_CART_003: Add Product - Out of Stock**
 
 | Field | Value |
 |-------|-------|
 | **Test Case ID** | TC_CART_003 |
-| **Test Name** | Thêm sản phẩm với số lượng = 0 - Bị từ chối |
+| **Test Name** | Thêm sản phẩm hết hàng vào giỏ - Bị từ chối |
 | **Priority** | 🔴 Critical |
-| **Category** | Boundary Test |
-| **Preconditions** | - Sản phẩm tồn tại và có stock |
-| **Test Steps** | 1. Chọn sản phẩm<br>2. Nhập số lượng: 0<br>3. Nhấn "Thêm vào giỏ hàng" |
-| **Test Data** | Quantity: 0<br>Stock: 10+ |
-| **Expected Result** | - Lỗi: "Số lượng phải lớn hơn 0"<br>- Nút "Thêm vào giỏ hàng" bị disable hoặc không hoạt động<br>- Sản phẩm không được thêm |
+| **Category** | Negative Test |
+| **Preconditions** | - Sản phẩm P003 tồn tại<br>- P003 đang ACTIVE nhưng stock = 0<br>- Giỏ hàng rỗng |
+| **Test Steps** | 1. Truy cập trang danh sách sản phẩm<br>2. Chọn sản phẩm "Keyboard Mechanical" (P003)<br>3. Nhập số lượng: 1<br>4. Nhấn "Thêm vào giỏ hàng" |
+| **Test Data** | Product ID: P003<br>Product Name: Keyboard Mechanical<br>Quantity: 1<br>Stock Available: 0 |
+| **Expected Result** | - Hiển thị lỗi: "Sản phẩm đã hết hàng"<br>- Nút "Thêm vào giỏ hàng" bị disable hoặc thao tác bị từ chối<br>- Sản phẩm KHÔNG được thêm vào giỏ hàng<br>- Giỏ hàng vẫn rỗng<br>- Badge giỏ hàng không thay đổi |
 | **Actual Result** | (Để trống) |
 | **Status** | Not Run |
 
@@ -226,76 +226,76 @@ Payment Method:
 | **Category** | Happy Path |
 | **Preconditions** | - Người dùng đã đăng nhập<br>- Giỏ hàng có: P001 x2 + P002 x1<br>- Stock P001=10, P002=50<br>- Payment method selected<br>- Address filled |
 | **Test Steps** | 1. Truy cập trang Giỏ hàng<br>2. Xác nhận thông tin đơn hàng<br>3. Chọn phương thức thanh toán<br>4. Nhập địa chỉ giao hàng<br>5. Nhấn "Đặt hàng" |
-| **Test Data** | Cart:<br>- P001 (Laptop Dell): 15,000,000 × 2 = 30,000,000<br>- P002 (Mouse): 500,000 × 1 = 500,000<br>Subtotal: 30,500,000 VND<br>Discount: 0 VND<br>Shipping: 50,000 VND<br>**Total: 30,550,000 VND**<br><br>Stock Before:<br>- P001: 10 → After: 8<br>- P002: 50 → After: 49<br><br>Payment: Cash/Credit Card<br>Address: Valid address |
-| **Expected Result** | - Order ID generated: ORD-XXXXX<br>- Status: PENDING<br>- Order total = 30,550,000 VND<br>- Stock P001: 10 → 8 ✓<br>- Stock P002: 50 → 49 ✓<br>- Confirmation email sent<br>- Redirect to order detail page<br>- Notification: "Đặt hàng thành công"<br>- Cart cleared |
+| **Test Data** | Cart:<br>- P001 (Laptop Dell): 15,000,000 × 2 = 30,000,000<br>- P002 (Mouse): 500,000 × 1 = 500,000<br>Subtotal: 30,500,000 VND<br>Coupon: SALE10 (giảm 10%)<br>Discount: 3,050,000 VND<br>Shipping: 50,000 VND<br>**Total: 27,500,000 VND**<br><br>Stock Before:<br>- P001: 10 → After: 8<br>- P002: 50 → After: 49<br><br>Payment: Cash/Credit Card<br>Address: Valid address |
+| **Expected Result** | - Order ID generated: ORD-XXXXX<br>- Status: PENDING<br>- Order total = 27,500,000 VND<br>- Stock P001: 10 → 8 ✓<br>- Stock P002: 50 → 49 ✓<br>- Confirmation email sent<br>- Redirect to order detail page<br>- Notification: "Đặt hàng thành công"<br>- Cart cleared |
 | **Actual Result** | (Để trống) |
 | **Status** | Not Run |
 
 ---
 
-#### **TC_PURCHASE_002: Apply 10% Coupon - Success**
+#### **TC_PURCHASE_002: Checkout With Out-of-Stock Product**
 
 | Field | Value |
 |-------|-------|
 | **Test Case ID** | TC_PURCHASE_002 |
-| **Test Name** | Áp dụng mã giảm giá 10% - Tính toán chính xác |
-| **Priority** | 🟠 High |
-| **Category** | Happy Path |
-| **Preconditions** | - Giỏ hàng: 30,500,000 VND<br>- Coupon SALE10 hợp lệ, không hết hạn<br>- Min order: 20,000,000 (đủ điều kiện) |
-| **Test Steps** | 1. Mở giỏ hàng<br>2. Nhập mã coupon: "SALE10"<br>3. Nhấn "Áp dụng mã"<br>4. Xác nhận price update |
-| **Test Data** | Coupon Code: SALE10<br>Type: PERCENT<br>Value: 10%<br><br>Subtotal: 30,500,000<br>Discount Calc: 30,500,000 × 10% = 3,050,000<br>Shipping: 50,000<br>**Total: 27,500,000** |
-| **Expected Result** | - Coupon accepted ✓<br>- Discount shown: -3,050,000 VND<br>- Cart subtotal: 30,500,000 (unchanged)<br>- Discount line: -3,050,000<br>- Shipping: 50,000<br>- **New Total: 27,500,000 VND** ✓<br>- Confirmation message: "Áp dụng mã SALE10 thành công"<br>- Coupon locked (can't remove until uncheck) |
+| **Test Name** | Đặt hàng khi sản phẩm hết hàng - Bị từ chối |
+| **Priority** | 🔴 Critical |
+| **Category** | Negative Test |
+| **Preconditions** | - Người dùng đã đăng nhập<br>- Giỏ hàng có P003 x1<br>- Stock P003 tại thời điểm checkout = 0 |
+| **Test Steps** | 1. Truy cập trang Giỏ hàng<br>2. Xác nhận thông tin đơn hàng<br>3. Chọn phương thức thanh toán<br>4. Nhấn "Đặt hàng" |
+| **Test Data** | Product ID: P003<br>Product Name: Keyboard Mechanical<br>Requested Qty: 1<br>Available Stock: 0<br>Shipping: 50,000 VND |
+| **Expected Result** | - Hiển thị lỗi: "Sản phẩm Keyboard Mechanical đã hết hàng"<br>- Order KHÔNG được tạo<br>- Không phát sinh orderId<br>- Tồn kho không thay đổi<br>- Giỏ hàng vẫn giữ sản phẩm để người dùng xóa/cập nhật |
 | **Actual Result** | (Để trống) |
 | **Status** | Not Run |
 
 ---
 
-#### **TC_PURCHASE_003: Fixed Amount Coupon - 500k VND**
+#### **TC_PURCHASE_003: Detect Incorrect Price Calculation**
 
 | Field | Value |
 |-------|-------|
 | **Test Case ID** | TC_PURCHASE_003 |
-| **Test Name** | Áp dụng mã giảm giá 500k VND - Tính toán chính xác |
-| **Priority** | 🟠 High |
-| **Category** | Happy Path |
-| **Preconditions** | - Giỏ hàng: 30,500,000 VND<br>- Coupon SAVE500 (fixed 500k) hợp lệ |
-| **Test Steps** | 1. Nhập coupon: "SAVE500"<br>2. Nhấn "Áp dụng"<br>3. Verify calculation |
-| **Test Data** | Coupon: SAVE500<br>Type: FIXED_AMOUNT<br>Value: 500,000 VND<br><br>Subtotal: 30,500,000<br>Discount: 500,000 (fixed)<br>Shipping: 50,000<br>**Total: 30,050,000** |
-| **Expected Result** | - Discount applied: -500,000<br>- Subtotal: 30,500,000<br>- Shipping: 50,000<br>- **New Total: 30,050,000 VND** ✓<br>- No further discounts allowed |
+| **Test Name** | Kiểm tra phát hiện tổng tiền tính sai |
+| **Priority** | 🔴 Critical |
+| **Category** | Negative Test |
+| **Preconditions** | - Giỏ hàng có nhiều sản phẩm<br>- Backend/API trả về hoặc UI hiển thị tổng tiền khác công thức chuẩn |
+| **Test Steps** | 1. Truy cập trang Checkout<br>2. Kiểm tra subtotal từng dòng sản phẩm<br>3. Áp dụng coupon SALE10<br>4. Kiểm tra shipping fee<br>5. Đối chiếu tổng tiền hiển thị với công thức chuẩn |
+| **Test Data** | P001: 15,000,000 × 2 = 30,000,000<br>P002: 500,000 × 1 = 500,000<br>Subtotal đúng: 30,500,000<br>Coupon SALE10: -3,050,000<br>Shipping: 50,000<br>Expected Total: 27,500,000<br>Faulty Total giả lập: 27,950,000 |
+| **Expected Result** | - Hệ thống/test phát hiện sai lệch tổng tiền<br>- Không cho đặt hàng nếu tổng tiền request khác tổng tiền server tính lại<br>- Hiển thị hoặc ghi nhận lỗi: "Tổng tiền không hợp lệ"<br>- Không trừ tồn kho, không tạo order |
 | **Actual Result** | (Để trống) |
 | **Status** | Not Run |
 
 ---
 
-#### **TC_PURCHASE_004: Out of Stock During Checkout**
+#### **TC_PURCHASE_004: Expired Coupon**
 
 | Field | Value |
 |-------|-------|
 | **Test Case ID** | TC_PURCHASE_004 |
-| **Test Name** | Đặt hàng khi sản phẩm hết hàng - Bị từ chối |
-| **Priority** | 🔴 Critical |
+| **Test Name** | Sử dụng mã giảm giá hết hạn - Bị từ chối |
+| **Priority** | 🟠 High |
 | **Category** | Negative Test |
-| **Preconditions** | - Giỏ hàng: P001 x5<br>- Stock P001 trước: 3 (nhỏ hơn qty yêu cầu)<br>- (Simulate: User added 5, but stock changed) |
-| **Test Steps** | 1. Mở giỏ hàng (có P001 x5)<br>2. Nhấn "Đặt hàng"<br>3. System check stock realtime |
-| **Test Data** | Product P001<br>Requested: 5<br>Available: 3<br>Shortage: 2 items |
-| **Expected Result** | - ERROR: "Không đủ tồn kho cho sản phẩm Laptop Dell"<br>- Message: "Chỉ còn 3 chiếc. Vui lòng cập nhật số lượng."<br>- Order REJECTED<br>- Redirect back to cart with warning<br>- Allow user to adjust quantity |
+| **Preconditions** | - Giỏ hàng: 30,500,000 VND<br>- Coupon EXPIRED2024 tồn tại nhưng đã hết hạn |
+| **Test Steps** | 1. Truy cập trang Checkout<br>2. Nhập mã giảm giá: "EXPIRED2024"<br>3. Nhấn "Áp dụng"<br>4. Kiểm tra tổng tiền và thông báo lỗi |
+| **Test Data** | Coupon: EXPIRED2024<br>Expiry Date: 30/04/2026<br>Current Date: 09/05/2026<br>Subtotal: 30,500,000<br>Shipping: 50,000 |
+| **Expected Result** | - Hiển thị lỗi: "Mã giảm giá đã hết hạn"<br>- Discount không được áp dụng<br>- Total giữ nguyên = 30,550,000 VND<br>- Người dùng có thể nhập mã khác<br>- Order chưa được tạo ở bước áp dụng coupon |
 | **Actual Result** | (Để trống) |
 | **Status** | Not Run |
 
 ---
 
-#### **TC_PURCHASE_005: Invalid/Expired Coupon**
+#### **TC_PURCHASE_005: Insufficient Stock During Checkout**
 
 | Field | Value |
 |-------|-------|
 | **Test Case ID** | TC_PURCHASE_005 |
-| **Test Name** | Sử dụng mã giảm giá hết hạn hoặc không hợp lệ - Bị từ chối |
-| **Priority** | 🟠 High |
+| **Test Name** | Đặt hàng khi tồn kho không đủ - Bị từ chối |
+| **Priority** | 🔴 Critical |
 | **Category** | Negative Test |
-| **Preconditions** | - Giỏ hàng: 30,500,000 VND |
-| **Test Steps** | **Scenario A (Expired):**<br>1. Nhập mã: "EXPIRED2024" (hết hạn 30/04/2026)<br>2. Nhấn "Áp dụng"<br><br>**Scenario B (Invalid):**<br>1. Nhập mã: "FAKE12345" (không tồn tại)<br>2. Nhấn "Áp dụng" |
-| **Test Data** | **A)** EXPIRED2024<br>- Valid format<br>- Expiry: 30/04/2026 (< today)<br><br>**B)** FAKE12345<br>- Format valid but not in DB |
-| **Expected Result** | **A) Expired Coupon:**<br>- Error: "Mã giảm giá hết hạn (Hạn: 30/04/2026)"<br>- Discount NOT applied<br>- Total remains: 30,550,000<br><br>**B) Invalid Coupon:**<br>- Error: "Mã giảm giá không tồn tại"<br>- Discount NOT applied<br>- Allow retry |
+| **Preconditions** | - Giỏ hàng: P001 x5<br>- Stock P001 tại thời điểm thêm vào giỏ có thể đủ, nhưng trước checkout chỉ còn 3 |
+| **Test Steps** | 1. Mở giỏ hàng có P001 x5<br>2. Chọn phương thức thanh toán<br>3. Nhập địa chỉ giao hàng hợp lệ<br>4. Nhấn "Đặt hàng"<br>5. Hệ thống kiểm tra tồn kho realtime |
+| **Test Data** | Product ID: P001<br>Requested Qty: 5<br>Available Stock: 3<br>Shortage: 2<br>Unit Price: 15,000,000 VND |
+| **Expected Result** | - Hiển thị lỗi: "Không đủ tồn kho cho sản phẩm Laptop Dell. Chỉ còn 3 sản phẩm"<br>- Order bị từ chối<br>- Không trừ tồn kho<br>- Không gửi email xác nhận<br>- Giỏ hàng giữ nguyên P001 x5 và yêu cầu người dùng cập nhật số lượng |
 | **Actual Result** | (Để trống) |
 | **Status** | Not Run |
 
@@ -358,6 +358,6 @@ validateOrder({
 
 ---
 
-**Document Version:** 1.0  
+**Document Version:** 1.1  
 **Last Updated:** 09/05/2026  
 **Status:** ✅ Complete

@@ -3,7 +3,7 @@ import {
   calculateOrderPrice,
   validateCoupon,
   checkInventoryAvailabilityForOrder,
-} from './priceCalculation';
+} from '../../utils/priceCalculation';
 
 describe('Price Calculation Tests', () => {
   describe('calculateOrderPrice', () => {
@@ -102,6 +102,19 @@ describe('Price Calculation Tests', () => {
       expect(result.subtotal).toBe(100000);
       expect(result.discount).toBe(100000); // Capped at subtotal
       expect(result.total).toBe(0);
+    });
+
+    test('TC7b: Coupon type không hỗ trợ không tạo discount', () => {
+      const items = [{ price: 100000, quantity: 1 }];
+      const coupon = {
+        code: 'UNKNOWN',
+        discountType: 'BOGO',
+        discountValue: 50000,
+      };
+      const result = calculateOrderPrice(items, coupon as never, 0);
+
+      expect(result.discount).toBe(0);
+      expect(result.total).toBe(100000);
     });
 
     test('TC8: Giỏ hàng rỗng', () => {
