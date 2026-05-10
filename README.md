@@ -30,23 +30,51 @@ ShopCart là ứng dụng web thương mại điện tử phục vụ bài tập
 ```text
 ShopCart_FE_BE/
 ├── backend/
-│   ├── src/main/java/com/shopcart/
-│   ├── src/main/resources/
-│   ├── src/test/java/com/shopcart/
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── java/com/shopcart/
+│   │   │   │   ├── common/
+│   │   │   │   ├── controller/
+│   │   │   │   ├── database/
+│   │   │   │   ├── dto/
+│   │   │   │   ├── entity/
+│   │   │   │   ├── exception/
+│   │   │   │   ├── repository/
+│   │   │   │   └── service/
+│   │   │   └── resources/
+│   │   └── test/
+│   │       └── java/com/shopcart/
+│   │           ├── controller/
+│   │           ├── repository/
+│   │           ├── security/
+│   │           └── service/
 │   ├── Dockerfile
 │   ├── mvnw
 │   └── pom.xml
 ├── frontend/
 │   ├── e2e/
+│   │   └── pages/
+│   ├── public/
 │   ├── src/
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   ├── services/
+│   │   ├── tests/
+│   │   │   ├── components/
+│   │   │   ├── services/
+│   │   │   └── utils/
+│   │   │   ├── setup.ts
+│   │   └── utils/
 │   ├── Dockerfile
 │   ├── package.json
 │   ├── playwright.config.ts
-│   └── vite.config.ts
+│   ├── vite.config.ts
+│   └── vitest.config.ts
 ├── reports/
 │   ├── performance/
 │   └── security/
-└── docker-compose.yml
+├── docker-compose.yml
+└── README.md
 ```
 
 ## Yêu Cầu Môi Trường
