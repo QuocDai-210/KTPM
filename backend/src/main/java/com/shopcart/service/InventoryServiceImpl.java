@@ -1,39 +1,38 @@
 package com.shopcart.service;
 
+import com.shopcart.repository.InventoryRepository;
 import org.springframework.stereotype.Service;
-
-import com.shopcart.repository.ProductRepository;
 
 @Service
 public class InventoryServiceImpl implements InventoryService {
-  private final ProductRepository productRepository;
+  private final InventoryRepository inventoryRepository;
 
-  public InventoryServiceImpl(ProductRepository productRepository) {
-    this.productRepository = productRepository;
+  public InventoryServiceImpl(InventoryRepository inventoryRepository) {
+    this.inventoryRepository = inventoryRepository;
   }
 
   @Override
   public boolean isAvailable(String productId, int quantity) {
-    var product = productRepository.findById(productId);
-    if (product.isEmpty()) return false;
-    return product.get().getStock() >= quantity;
+    var inventory = inventoryRepository.findByProductId(productId);
+    if (inventory.isEmpty()) return false;
+    return inventory.get().getQuantity() >= quantity;
   }
 
   @Override
   public void decreaseStock(String productId, int quantity) {
-    var product = productRepository.findById(productId);
-    if (product.isPresent()) {
-      product.get().setStock(product.get().getStock() - quantity);
-      productRepository.save(product.get());
+    var inventory = inventoryRepository.findByProductId(productId);
+    if (inventory.isPresent()) {
+      inventory.get().setQuantity(inventory.get().getQuantity() - quantity);
+      inventoryRepository.save(inventory.get());
     }
   }
 
   @Override
   public void increaseStock(String productId, int quantity) {
-    var product = productRepository.findById(productId);
-    if (product.isPresent()) {
-      product.get().setStock(product.get().getStock() + quantity);
-      productRepository.save(product.get());
+    var inventory = inventoryRepository.findByProductId(productId);
+    if (inventory.isPresent()) {
+      inventory.get().setQuantity(inventory.get().getQuantity() + quantity);
+      inventoryRepository.save(inventory.get());
     }
   }
 }

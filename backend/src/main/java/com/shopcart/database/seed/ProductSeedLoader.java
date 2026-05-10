@@ -2,6 +2,7 @@ package com.shopcart.database.seed;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.shopcart.entity.Inventory;
 import com.shopcart.entity.Product;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -26,14 +27,16 @@ public class ProductSeedLoader {
   @EventListener(ApplicationReadyEvent.class)
   @Transactional
   public void seedProducts() {
-    Long count = entityManager
-        .createQuery("select count(p) from Product p", Long.class)
-        .getSingleResult();
-    if (count > 0) {
-      return;
-    }
-
-    loadProducts().forEach(entityManager::persist);
+    loadProducts()
+        .forEach(
+            product -> {
+              if (entityManager.find(Product.class, product.getId()) == null) {
+                entityManager.persist(product);
+              }
+              if (entityManager.find(Inventory.class, product.getId()) == null) {
+                entityManager.persist(new Inventory(product.getId(), product.getStock()));
+              }
+            });
   }
 
   private List<Product> loadProducts() {

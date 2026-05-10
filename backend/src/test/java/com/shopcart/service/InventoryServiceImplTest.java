@@ -3,12 +3,13 @@ package com.shopcart.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.shopcart.entity.Product;
-import com.shopcart.repository.ProductRepository;
+import com.shopcart.entity.Inventory;
+import com.shopcart.repository.InventoryRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,15 +21,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Inventory Service Tests")
 class InventoryServiceImplTest {
-  @Mock private ProductRepository productRepository;
+  @Mock private InventoryRepository inventoryRepository;
 
   @InjectMocks private InventoryServiceImpl inventoryService;
 
   @Test
   @DisplayName("isAvailable returns true when stock is sufficient")
   void testIsAvailableTrue() {
-    when(productRepository.findById("P001"))
-        .thenReturn(Optional.of(new Product("P001", "Laptop", 15000000L, 5)));
+    when(inventoryRepository.findByProductId("P001")).thenReturn(Optional.of(new Inventory("P001", 5)));
 
     assertTrue(inventoryService.isAvailable("P001", 3));
   }
@@ -36,7 +36,7 @@ class InventoryServiceImplTest {
   @Test
   @DisplayName("isAvailable returns false when product is missing")
   void testIsAvailableFalseWhenProductMissing() {
-    when(productRepository.findById("P404")).thenReturn(Optional.empty());
+    when(inventoryRepository.findByProductId("P404")).thenReturn(Optional.empty());
 
     assertFalse(inventoryService.isAvailable("P404", 1));
   }
@@ -44,35 +44,35 @@ class InventoryServiceImplTest {
   @Test
   @DisplayName("decreaseStock updates product and saves it")
   void testDecreaseStock() {
-    Product product = new Product("P001", "Laptop", 15000000L, 5);
-    when(productRepository.findById("P001")).thenReturn(Optional.of(product));
+    Inventory inventory = new Inventory("P001", 5);
+    when(inventoryRepository.findByProductId("P001")).thenReturn(Optional.of(inventory));
 
     inventoryService.decreaseStock("P001", 2);
 
-    assertEquals(3, product.getStock());
-    verify(productRepository).save(product);
+    assertEquals(3, inventory.getQuantity());
+    verify(inventoryRepository).save(inventory);
   }
 
   @Test
   @DisplayName("increaseStock updates product and saves it")
   void testIncreaseStock() {
-    Product product = new Product("P001", "Laptop", 15000000L, 5);
-    when(productRepository.findById("P001")).thenReturn(Optional.of(product));
+    Inventory inventory = new Inventory("P001", 5);
+    when(inventoryRepository.findByProductId("P001")).thenReturn(Optional.of(inventory));
 
     inventoryService.increaseStock("P001", 4);
 
-    assertEquals(9, product.getStock());
-    verify(productRepository).save(product);
+    assertEquals(9, inventory.getQuantity());
+    verify(inventoryRepository).save(inventory);
   }
 
   @Test
   @DisplayName("stock operations do nothing when product is missing")
   void testStockOperationsDoNothingWhenMissing() {
-    when(productRepository.findById("P404")).thenReturn(Optional.empty());
+    when(inventoryRepository.findByProductId("P404")).thenReturn(Optional.empty());
 
     inventoryService.decreaseStock("P404", 2);
     inventoryService.increaseStock("P404", 2);
 
-    verify(productRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    verify(inventoryRepository, never()).save(any());
   }
 }

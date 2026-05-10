@@ -26,7 +26,7 @@ function App() {
         if (!active) {
           return;
         }
-        const items = Array.isArray(response?.items) ? response.items : [];
+        const items: cartService.CartItem[] = Array.isArray(response?.items) ? response.items : [];
         setCartCount(items.reduce((sum, item) => sum + item.quantity, 0));
       })
       .catch(() => {

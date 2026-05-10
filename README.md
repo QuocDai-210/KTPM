@@ -157,24 +157,6 @@ k6 run performance-tests.k6.js
 - Test case documentation: `docs/TESTCASES.md`
 - Performance and security documentation: `docs/ADVANCED_TESTING.md`
 
-## 📋 Các Tính Năng
-
-### Cart (Giỏ Hàng)
-- ✅ Thêm sản phẩm vào giỏ
-- ✅ Xóa sản phẩm khỏi giỏ
-- ✅ Cập nhật số lượng
-- ✅ Tính tổng giá
-- ✅ Kiểm tra tồn kho
-- ✅ Validation input
-
-### Purchase (Mua Hàng)
-- ✅ Tạo đơn hàng
-- ✅ Tính giá với giảm giá
-- ✅ Tính phí vận chuyển
-- ✅ Kiểm tra coupon
-- ✅ Cập nhật tồn kho
-- ✅ Xác nhận đơn hàng
-
 ## 📊 Test Coverage
 
 ### Frontend
