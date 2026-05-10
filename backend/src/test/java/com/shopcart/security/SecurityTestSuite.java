@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
@@ -62,22 +63,19 @@ class SecurityTestSuite {
   }
 
   @Test
-  @DisplayName("ST_SQLI_001: SQL Injection payload must not crash order API")
+  @DisplayName("ST_SQLI_001: SQL Injection payload must be rejected as invalid product")
   void testOrderSqlInjectionPayload() throws Exception {
+    String sqlInjectionProductId = "P001' OR '1'='1";
     OrderRequest request =
         OrderRequest.builder()
             .userId("user01")
-            .items(List.of(new OrderItemRequest("P001", 1, 1000000L)))
+            .items(List.of(new OrderItemRequest(sqlInjectionProductId, 1, 1000000L)))
             .shippingAddress("123 Main St")
+            .paymentMethod("COD")
             .build();
 
     when(orderService.createOrder(any(OrderRequest.class)))
-        .thenReturn(
-            OrderResponse.builder()
-                .orderId("ORD-SEC-001")
-                .status(OrderStatus.PENDING)
-                .totalPrice(1000000L)
-                .build());
+        .thenThrow(new IllegalArgumentException("Product ID khong hop le"));
 
     mockMvc
         .perform(
@@ -85,7 +83,8 @@ class SecurityTestSuite {
                 .header("Authorization", "Bearer token123")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated());
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.success").value(false));
 
     verify(orderService, times(1)).createOrder(any(OrderRequest.class));
   }
@@ -98,6 +97,7 @@ class SecurityTestSuite {
             .userId("user01")
             .items(List.of(new OrderItemRequest("P001", 1, 1000000L)))
             .shippingAddress("<script>alert('xss')</script>")
+            .paymentMethod("COD")
             .build();
 
     when(orderService.createOrder(any(OrderRequest.class)))
@@ -116,7 +116,10 @@ class SecurityTestSuite {
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated());
 
-    verify(orderService, times(1)).createOrder(any(OrderRequest.class));
+    ArgumentCaptor<OrderRequest> captor = ArgumentCaptor.forClass(OrderRequest.class);
+    verify(orderService, times(1)).createOrder(captor.capture());
+    org.junit.jupiter.api.Assertions.assertEquals(
+        "<script>alert('xss')</script>", captor.getValue().getShippingAddress());
   }
 
   @Test

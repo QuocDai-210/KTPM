@@ -273,6 +273,14 @@ Sau khi chạy test, có thể xem các report:
 - Backend JaCoCo report: `backend/target/site/jacoco/index.html`
 - Performance report: `reports/performance/cart-k6-summary.md`
 - Performance HTML report: `reports/performance/cart-k6-report.html`
+- Security report: `reports/security/security-test-summary.md`
+
+Security testing cho câu 6.2:
+
+```bash
+cd backend
+./mvnw test -Dtest=SecurityTestSuite
+```
 
 ## CI/CD
 
