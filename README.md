@@ -48,7 +48,6 @@ ShopCart_FE_BE/
 │   │   ├── repository/
 │   │   └── service/
 │   ├── src/test/java/com/shopcart/
-│   ├── performance-tests.k6.js
 │   ├── mvnw
 │   └── pom.xml
 │
@@ -69,6 +68,11 @@ ShopCart_FE_BE/
 └── .github/workflows/
     ├── cart-tests.yml
     └── ci.yml
+└── reports/performance/
+    ├── performance-tests.k6.js
+    ├── cart-k6-summary.md
+    ├── cart-k6-summary.json
+    └── cart-k6-report.html
 ```
 
 ## Yêu Cầu Môi Trường
@@ -212,6 +216,20 @@ cd backend
 ./mvnw test -Dtest=OrderServiceTest
 ```
 
+Performance test bằng k6:
+
+```bash
+docker run --rm --network host \
+  -v "$PWD:/work" \
+  -w /work \
+  grafana/k6 run \
+  -e BASE_URL=http://localhost:8080 \
+  -e SUMMARY_MD=reports/performance/cart-k6-summary.md \
+  -e SUMMARY_JSON=reports/performance/cart-k6-summary.json \
+  -e SUMMARY_HTML=reports/performance/cart-k6-report.html \
+  reports/performance/performance-tests.k6.js
+```
+
 ## Chức Năng Chính
 
 - Hiển thị danh sách sản phẩm.
@@ -253,6 +271,8 @@ Sau khi chạy test, có thể xem các report:
 - Frontend coverage: `frontend/coverage/index.html`
 - Playwright report: `frontend/playwright-report/index.html`
 - Backend JaCoCo report: `backend/target/site/jacoco/index.html`
+- Performance report: `reports/performance/cart-k6-summary.md`
+- Performance HTML report: `reports/performance/cart-k6-report.html`
 
 ## CI/CD
 
