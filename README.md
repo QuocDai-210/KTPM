@@ -66,35 +66,7 @@ Backend đã có Maven Wrapper trong `backend/`, vì vậy không bắt buộc c
 
 ## Cài Đặt
 
-### Cài Đặt Bằng Docker
-
-Từ thư mục gốc repo, build và khởi động toàn bộ stack:
-
-```bash
-docker compose up --build
-```
-
-Sau khi chạy xong, truy cập:
-
-```text
-Frontend: http://localhost:5173
-Backend:  http://localhost:8080
-Database: localhost:5432
-```
-
-Dừng ứng dụng:
-
-```bash
-docker compose down
-```
-
-Dừng ứng dụng và xóa dữ liệu PostgreSQL volume:
-
-```bash
-docker compose down -v
-```
-
-## Chạy Bằng Docker Compose
+## Chạy Bằng Docker 
 
 Từ thư mục gốc repo:
 
@@ -104,22 +76,16 @@ docker compose up --build
 
 Docker Compose sẽ chạy:
 
-| Service | Port | Ghi chú |
-| --- | --- | --- |
-| `frontend` | `http://localhost:5173` | Nginx serve React build |
-| `backend` | `http://localhost:8080` | Spring Boot profile `postgres` |
-| `postgres` | `localhost:5432` | Database `shopcart` |
+| Service | Port | 
+| --- | --- |
+| `frontend` | `http://localhost:5173` |
+| `backend` | `http://localhost:8080` |
+| `postgres` | `localhost:5432` |
 
 Dừng container:
 
 ```bash
 docker compose down
-```
-
-Dừng container và xóa volume PostgreSQL:
-
-```bash
-docker compose down -v
 ```
 
 ## Chạy Test
@@ -139,6 +105,7 @@ Chạy E2E Test:
 
 ```bash
 cd frontend
+npx playwright install
 npm run test:e2e
 ```
 
