@@ -1,4 +1,4 @@
-name: ShopCart CI
+name: Complete CI/CD Pipeline
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -11,11 +11,11 @@ on:
 
 jobs:
   backend-tests:
-    name: Backend tests
+    name: Backend Tests
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v4
 
       - name: Setup Java 21
@@ -25,23 +25,26 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: Run JUnit and JaCoCo
+      - name: Run JUnit and Mockito tests
         working-directory: backend
         run: ./mvnw clean test jacoco:report
 
-      - name: Upload JaCoCo report
-        if: always()
+      - name: Upload backend test and coverage reports
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: backend-jacoco-report
-          path: backend/target/site/jacoco/
+          name: backend-test-reports
+          path: |
+            backend/target/surefire-reports/
+            backend/target/site/jacoco/
+          retention-days: 30
 
   frontend-tests:
-    name: Frontend unit and component tests
+    name: Frontend Tests
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v4
 
       - name: Setup Node.js 22
@@ -51,11 +54,11 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install dependencies
+      - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
 
-      - name: Lint
+      - name: Lint frontend
         working-directory: frontend
         run: npm run lint
 
@@ -63,20 +66,21 @@ jobs:
         working-directory: frontend
         run: npm run test:coverage
 
-      - name: Upload Vitest coverage
-        if: always()
+      - name: Upload frontend coverage report
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: frontend-coverage
+          name: frontend-coverage-report
           path: frontend/coverage/
+          retention-days: 30
 
   e2e-tests:
-    name: Playwright E2E
+    name: Playwright E2E Tests
     runs-on: ubuntu-latest
     needs: [backend-tests, frontend-tests]
 
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v4
 
       - name: Setup Node.js 22
@@ -86,7 +90,7 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install dependencies
+      - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
 
@@ -94,14 +98,22 @@ jobs:
         working-directory: frontend
         run: npx playwright install --with-deps
 
-      - name: Run Playwright tests
+      - name: Run Purchase and Cart E2E tests
         working-directory: frontend
         run: npm run test:e2e:all
 
-      - name: Upload Playwright report
-        if: always()
+      - name: Upload Playwright HTML report
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: playwright-report
+          name: playwright-html-report
           path: frontend/playwright-report/
+          retention-days: 30
+
+      - name: Upload Playwright traces and screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-test-results
+          path: frontend/test-results/
           retention-days: 30
