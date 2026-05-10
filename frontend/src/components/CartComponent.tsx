@@ -212,7 +212,7 @@ export default function CartComponent({ userId, onCartCountChange }: CartCompone
           </div>
           <div className="summary-line">
             <span>Giảm giá</span>
-            <strong>{formatMoney(price.discount)}</strong>
+            <strong data-testid="discount-amount">{formatMoney(price.discount)}</strong>
           </div>
           <div className="summary-line">
             <span>Phí vận chuyển</span>

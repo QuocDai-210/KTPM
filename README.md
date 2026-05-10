@@ -1,219 +1,271 @@
-# ShopCart - E-Commerce Testing Project
+# ShopCart FE/BE
 
-Dự án ShopCart là một ứng dụng web thương mại điện tử phục vụ cho việc kiểm thử các chức năng ở cả frontend và backend.
+ShopCart là dự án web thương mại điện tử nhỏ dùng cho bài tập kiểm thử phần mềm. Dự án gồm frontend React/Vite và backend Spring Boot, tập trung vào các chức năng giỏ hàng, tính giá, mã giảm giá, tồn kho và đặt hàng.
 
-## 📋 Mục Lục
+Mục tiêu chính của dự án là minh họa nhiều tầng kiểm thử:
 
-- [Công Nghệ Sử Dụng](#công-nghệ-sử-dụng)
-- [Cấu Trúc Dự Án](#cấu-trúc-dự-án)
-- [Cài Đặt](#cài-đặt)
-- [Chạy Ứng Dụng](#chạy-ứng-dụng)
-- [Chạy Tests](#chạy-tests)
-- [Các Tính Năng](#các-tính-năng)
+- Unit test cho logic nghiệp vụ và utility.
+- Integration test cho component frontend và API backend.
+- Mock test cho service/repository/API dependency.
+- E2E automation test với Playwright cho Cart và Purchase/Checkout flow.
+- CI/CD bằng GitHub Actions.
 
-## 🛠 Công Nghệ Sử Dụng
+## Công Nghệ
 
-### Frontend
-- React 19.x
+Frontend:
+
+- React 19
 - TypeScript
 - Vite
-- Vitest (Unit Tests)
-- React Testing Library
-- Playwright (E2E Tests)
 - Axios
+- Vitest
+- React Testing Library
+- Playwright
 
-### Backend
-- Spring Boot 4.0.6
+Backend:
+
 - Java 21
+- Spring Boot
+- Maven Wrapper
 - JUnit 5
 - Mockito
-- Maven
 - Spring Data JPA
 - Spring Security
+- H2/PostgreSQL
+- JaCoCo
 
-## 📂 Cấu Trúc Dự Án
+## Cấu Trúc Dự Án
 
-```
+```text
 ShopCart_FE_BE/
-├── frontend/                 # React 19 + Vite application
-│   ├── src/
-│   │   ├── components/       # Cart, Checkout, Inventory components
-│   │   ├── services/         # API services (cartService, orderService)
-│   │   ├── utils/            # Validation, price calculation utilities
-│   │   ├── hooks/            # Custom React hooks
-│   │   └── tests/            # Test files (Vitest)
-│   ├── e2e/                  # Playwright E2E tests
-│   ├── vite.config.ts
-│   ├── playwright.config.ts
-│   └── package.json
-│
 ├── backend/
 │   ├── src/main/java/com/shopcart/
-│   │   ├── controller/        # CartController, ProductController, OrderController
-│   │   ├── service/           # Business logic services
-│   │   ├── dto/               # Data Transfer Objects
-│   │   ├── entity/            # Database entities
-│   │   ├── repository/        # Data access layers
-│   │   └── exception/         # Custom exceptions
-│   ├── src/test/              # Test files (JUnit 5 + Mockito)
+│   │   ├── controller/
+│   │   ├── database/
+│   │   ├── dto/
+│   │   ├── entity/
+│   │   ├── exception/
+│   │   ├── repository/
+│   │   └── service/
+│   ├── src/test/java/com/shopcart/
 │   ├── performance-tests.k6.js
+│   ├── mvnw
 │   └── pom.xml
 │
-└── .github/workflows/        # CI/CD pipelines
+├── frontend/
+│   ├── e2e/
+│   │   ├── pages/
+│   │   ├── cart.e2e.spec.ts
+│   │   └── purchase.e2e.spec.ts
+│   ├── src/
+│   │   ├── components/
+│   │   ├── services/
+│   │   ├── tests/
+│   │   └── utils/
+│   ├── package.json
+│   ├── playwright.config.ts
+│   └── vite.config.ts
+│
+└── .github/workflows/
+    ├── cart-tests.yml
     └── ci.yml
 ```
 
-## 💻 Cài Đặt
+## Yêu Cầu Môi Trường
 
-### Yêu Cầu
-- Node.js 22+ (cho frontend)
-- Java 21 (cho backend)
-- Maven 3.9+
+- Node.js 22 hoặc mới hơn
+- npm
+- Java 21
+- Maven Wrapper có sẵn trong `backend/`
+- Playwright browsers, cài bằng lệnh ở phần dưới
 
-### Frontend Setup
+## Cài Đặt
+
+Clone repo và cài dependencies frontend:
 
 ```bash
 cd frontend
 npm install
+npx playwright install
 ```
 
-### Backend Setup
+Chuẩn bị backend:
 
 ```bash
 cd backend
-./mvnw clean install
+./mvnw clean test
 ```
 
-## ▶️ Chạy Ứng Dụng
-
-### Frontend Development
+Trên Windows có thể dùng:
 
 ```bash
-cd frontend
-npm run dev
-# Truy cập http://localhost:5173
+cd backend
+mvnw.cmd clean test
 ```
 
-### Backend Development
+## Chạy Ứng Dụng
+
+Chạy backend trước:
 
 ```bash
 cd backend
 ./mvnw spring-boot:run
-# API sẽ chạy trên http://localhost:8080
 ```
 
-## 🧪 Chạy Tests
+Backend mặc định chạy tại:
 
-### Frontend Unit Tests
+```text
+http://localhost:8080
+```
+
+Chạy frontend ở terminal khác:
 
 ```bash
 cd frontend
-npm run test              # Run all tests
-npm run test -- --ui      # Run with UI mode
-npm run test -- --coverage # Run with coverage report
+npm run dev
 ```
 
-### Frontend E2E Tests
+Frontend mặc định chạy tại:
+
+```text
+http://localhost:5173
+```
+
+Vite đã cấu hình proxy `/api` sang backend `http://localhost:8080`.
+
+## Chạy Tests
+
+Frontend unit/integration tests:
 
 ```bash
 cd frontend
-npm run test:e2e          # Run all E2E tests
-npm run test:e2e:all      # Run E2E tests on Chromium, Firefox, and WebKit
-npm run test:e2e:ui       # Run with interactive UI
-npm run test:e2e:debug    # Run in debug mode
-npm run test:e2e:report   # Show HTML report
+npm test
 ```
 
-### Backend Unit Tests
+Frontend coverage:
 
 ```bash
-cd backend
-./mvnw test               # Run all tests
-./mvnw test -Dtest=CartServiceTest  # Run specific test
-./mvnw clean package      # Build and run tests
+cd frontend
+npm run test:coverage
 ```
 
-### Complete CI/CD Pipeline
+Frontend lint:
 
 ```bash
-# Local CI/CD simulation
-cd backend && ./mvnw test
-cd ../frontend && npm install && npm run test -- -- run
+cd frontend
+npm run lint
+```
+
+Frontend build:
+
+```bash
+cd frontend
+npm run build
+```
+
+Playwright E2E cho Cart và Purchase trên Chromium + Firefox:
+
+```bash
+cd frontend
 npm run test:e2e
 ```
 
-### Performance Tests
+Playwright E2E trên toàn bộ browser đã cấu hình:
+
+```bash
+cd frontend
+npm run test:e2e:all
+```
+
+Chạy riêng Purchase E2E:
+
+```bash
+cd frontend
+npx playwright test e2e/purchase.e2e.spec.ts --project=chromium
+```
+
+Mở Playwright report:
+
+```bash
+cd frontend
+npm run test:e2e:report
+```
+
+Backend tests:
 
 ```bash
 cd backend
-k6 run performance-tests.k6.js
+./mvnw test
 ```
 
-### Reports
+Backend build kèm test:
 
-- Backend coverage: `backend/target/site/jacoco/index.html`
+```bash
+cd backend
+./mvnw clean package
+```
+
+Chạy một test backend cụ thể:
+
+```bash
+cd backend
+./mvnw test -Dtest=OrderServiceTest
+```
+
+## Chức Năng Chính
+
+- Hiển thị danh sách sản phẩm.
+- Thêm sản phẩm vào giỏ hàng.
+- Kiểm tra tồn kho và chặn sản phẩm hết hàng.
+- Cập nhật/xóa sản phẩm trong giỏ.
+- Tính subtotal, discount, shipping fee và total.
+- Áp dụng mã giảm giá như `SALE10`, `SALE20`, `FIXED100K`.
+- Tạo đơn hàng Purchase/Checkout.
+- Xóa giỏ hàng sau khi đặt hàng thành công.
+
+## API Chính
+
+Cart:
+
+- `POST /api/cart/add`
+- `GET /api/cart/{userId}`
+- `PUT /api/cart/update`
+- `DELETE /api/cart/{userId}/{productId}`
+
+Products:
+
+- `GET /api/products`
+
+Orders:
+
+- `POST /api/orders`
+
+Các API test thường dùng header:
+
+```text
+Authorization: Bearer token123
+```
+
+## Báo Cáo Và Kết Quả Test
+
+Sau khi chạy test, có thể xem các report:
+
 - Frontend coverage: `frontend/coverage/index.html`
 - Playwright report: `frontend/playwright-report/index.html`
-- Test case documentation: `docs/TESTCASES.md`
-- Performance and security documentation: `docs/ADVANCED_TESTING.md`
+- Backend JaCoCo report: `backend/target/site/jacoco/index.html`
 
-## 📊 Test Coverage
+## CI/CD
 
-### Frontend
-- Unit Tests: ≥ 90% coverage
-  - `cartValidation.ts`: 10+ test cases
-  - `priceCalculation.ts`: 14+ test cases
-- Integration Tests: Cart component with mocked services
-- E2E Tests: Playwright tests for cart and purchase flows
+Repo có workflow GitHub Actions trong `.github/workflows/` để chạy kiểm thử tự động. Pipeline chính phục vụ các nhóm việc:
 
-### Backend
-- Unit Tests: ≥ 85% coverage
-  - CartService: 6+ test cases
-  - OrderService: 8+ test cases
-- Integration Tests: Controller API endpoints with MockMvc
-- Mock Tests: Service and repository mocking
+- Backend unit/integration tests.
+- Frontend unit/integration tests.
+- Frontend lint/build.
+- Playwright E2E tests.
+- Upload test reports khi workflow chạy xong.
 
-## 📝 API Endpoints
+## Ghi Chú
 
-### Cart Endpoints
-- `POST /api/cart/add` - Thêm sản phẩm vào giỏ
-- `GET /api/cart/{userId}` - Lấy giỏ hàng
-- `PUT /api/cart/update` - Cập nhật số lượng
-- `DELETE /api/cart/{userId}/{productId}` - Xóa sản phẩm
-
-### Order Endpoints
-- `POST /api/orders` - Tạo đơn hàng
-- `GET /api/order/{orderId}` - Lấy thông tin đơn hàng
-- `PATCH /api/order/{orderId}/cancel` - Hủy đơn hàng
-
-## 🔐 Authentication
-
-Tất cả API endpoints yêu cầu header `Authorization: Bearer token123`
-
-## 📄 Test Cases Documentation
-
-Xem file `TEST_CASES.md` để tìm:
-- Phân tích yêu cầu chức năng
-- Chi tiết các test scenarios
-- Mức độ ưu tiên (Critical, High, Medium, Low)
-- Expected results cho từng scenario
-
-## 🚀 CI/CD Pipeline
-
-GitHub Actions workflow (`ci.yml`) tự động:
-1. Chạy backend unit tests (JUnit 5)
-2. Chạy frontend unit tests (Vitest)
-3. Chạy linting
-4. Chạy E2E tests (Playwright)
-5. Lưu HTML reports
-
-Pipeline chạy tự động khi push hoặc tạo pull request vào `main` branch.
-
-## 📚 References
-
-- [React Documentation](https://react.dev)
-- [Vitest Documentation](https://vitest.dev)
-- [Playwright Documentation](https://playwright.dev)
-- [Spring Boot Documentation](https://spring.io/projects/spring-boot)
-- [JUnit 5 User Guide](https://junit.org/junit5/)
-- [Mockito Framework](https://site.mockito.org/)
+- Nếu chỉ chạy Playwright E2E với mock route trong test, không nhất thiết cần backend chạy trước.
+- Nếu chạy app thủ công đầy đủ, nên bật backend trước rồi mới bật frontend.
+- Khi Playwright thiếu browser binary, chạy lại `npx playwright install` trong thư mục `frontend/`.
