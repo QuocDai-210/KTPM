@@ -9,7 +9,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.shopcart.entity.Inventory;
+import com.shopcart.entity.Product;
 import com.shopcart.repository.InventoryRepository;
+import com.shopcart.repository.ProductRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @DisplayName("Inventory Service Tests")
 class InventoryServiceImplTest {
   @Mock private InventoryRepository inventoryRepository;
+  @Mock private ProductRepository productRepository;
 
   @InjectMocks private InventoryServiceImpl inventoryService;
 
@@ -45,24 +48,32 @@ class InventoryServiceImplTest {
   @DisplayName("decreaseStock updates product and saves it")
   void testDecreaseStock() {
     Inventory inventory = new Inventory("P001", 5);
+    Product product = new Product("P001", "Laptop", 1000L, 5);
     when(inventoryRepository.findByProductId("P001")).thenReturn(Optional.of(inventory));
+    when(productRepository.findById("P001")).thenReturn(Optional.of(product));
 
     inventoryService.decreaseStock("P001", 2);
 
     assertEquals(3, inventory.getQuantity());
+    assertEquals(3, product.getStock());
     verify(inventoryRepository).save(inventory);
+    verify(productRepository).save(product);
   }
 
   @Test
   @DisplayName("increaseStock updates product and saves it")
   void testIncreaseStock() {
     Inventory inventory = new Inventory("P001", 5);
+    Product product = new Product("P001", "Laptop", 1000L, 5);
     when(inventoryRepository.findByProductId("P001")).thenReturn(Optional.of(inventory));
+    when(productRepository.findById("P001")).thenReturn(Optional.of(product));
 
     inventoryService.increaseStock("P001", 4);
 
     assertEquals(9, inventory.getQuantity());
+    assertEquals(9, product.getStock());
     verify(inventoryRepository).save(inventory);
+    verify(productRepository).save(product);
   }
 
   @Test

@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.shopcart.entity.Inventory;
+import com.shopcart.entity.Product;
 import com.shopcart.repository.InventoryRepository;
 import com.shopcart.repository.OrderRepository;
 import com.shopcart.repository.ProductRepository;
@@ -36,16 +37,20 @@ class OrderServiceMockTest {
   @Test
   void testCheckAndReduceInventory() {
     Inventory inventory = new Inventory("P001", 10);
+    Product product = new Product("P001", "Laptop", 1000L, 10);
 
     when(inventoryRepository.findByProductId("P001")).thenReturn(Optional.of(inventory));
     when(inventoryRepository.save(any(Inventory.class))).thenAnswer(inv -> inv.getArgument(0));
+    when(productRepository.findById("P001")).thenReturn(Optional.of(product));
 
     inventoryService.decreaseStock("P001", 3);
 
     ArgumentCaptor<Inventory> captor = ArgumentCaptor.forClass(Inventory.class);
     verify(inventoryRepository).save(captor.capture());
-    verifyNoInteractions(orderRepository, productRepository);
+    verify(productRepository).save(product);
+    verifyNoInteractions(orderRepository);
     assertEquals(7, captor.getValue().getQuantity());
+    assertEquals(7, product.getStock());
   }
 
   @Test

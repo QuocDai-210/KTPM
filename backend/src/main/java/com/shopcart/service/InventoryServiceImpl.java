@@ -1,14 +1,18 @@
 package com.shopcart.service;
 
 import com.shopcart.repository.InventoryRepository;
+import com.shopcart.repository.ProductRepository;
 import org.springframework.stereotype.Service;
 
 @Service
 public class InventoryServiceImpl implements InventoryService {
   private final InventoryRepository inventoryRepository;
+  private final ProductRepository productRepository;
 
-  public InventoryServiceImpl(InventoryRepository inventoryRepository) {
+  public InventoryServiceImpl(
+      InventoryRepository inventoryRepository, ProductRepository productRepository) {
     this.inventoryRepository = inventoryRepository;
+    this.productRepository = productRepository;
   }
 
   @Override
@@ -22,8 +26,10 @@ public class InventoryServiceImpl implements InventoryService {
   public void decreaseStock(String productId, int quantity) {
     var inventory = inventoryRepository.findByProductId(productId);
     if (inventory.isPresent()) {
-      inventory.get().setQuantity(inventory.get().getQuantity() - quantity);
+      int nextQuantity = inventory.get().getQuantity() - quantity;
+      inventory.get().setQuantity(nextQuantity);
       inventoryRepository.save(inventory.get());
+      syncProductStock(productId, nextQuantity);
     }
   }
 
@@ -31,8 +37,20 @@ public class InventoryServiceImpl implements InventoryService {
   public void increaseStock(String productId, int quantity) {
     var inventory = inventoryRepository.findByProductId(productId);
     if (inventory.isPresent()) {
-      inventory.get().setQuantity(inventory.get().getQuantity() + quantity);
+      int nextQuantity = inventory.get().getQuantity() + quantity;
+      inventory.get().setQuantity(nextQuantity);
       inventoryRepository.save(inventory.get());
+      syncProductStock(productId, nextQuantity);
     }
+  }
+
+  private void syncProductStock(String productId, int quantity) {
+    productRepository
+        .findById(productId)
+        .ifPresent(
+            product -> {
+              product.setStock(quantity);
+              productRepository.save(product);
+            });
   }
 }
