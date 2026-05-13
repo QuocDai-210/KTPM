@@ -99,6 +99,40 @@ test.describe('Checkout E2E Tests', () => {
     await expect(checkoutPage.cartItem('Laptop Dell')).toBeVisible();
   });
 
+  test('Out of stock warning - Prevent checkout', async ({ page }) => {
+    await page.route('**/api/orders', async (route) => {
+      await route.fulfill({
+        status: 400,
+        json: { success: false, message: 'Không đủ tồn kho' },
+      });
+    });
+
+    await checkoutPage.fillShippingAddress('789 Pasteur, HCM');
+    await checkoutPage.placeOrderBtn.click();
+
+    await expect(checkoutPage.formMessage).toContainText('Không đủ tồn kho');
+    await expect(checkoutPage.emptyCartMessage).toHaveCount(0);
+    expect(removeCartItemCalls).toBe(0);
+  });
+
+  test('Payment method selection', async ({ page }) => {
+    let orderPayload: { paymentMethod?: string } | null = null;
+
+    await page.route('**/api/orders', async (route) => {
+      orderPayload = route.request().postDataJSON();
+      await route.fulfill({
+        status: 201,
+        json: { orderId: 'ORD-COD', status: 'PENDING', totalPrice: 15050000 },
+      });
+    });
+
+    await checkoutPage.fillShippingAddress('123 Test St');
+    await checkoutPage.placeOrder();
+
+    expect(orderPayload).toMatchObject({ paymentMethod: 'COD' });
+    await expect(checkoutPage.successMessage).toContainText('ORD-COD');
+  });
+
   test('Place order sends discounted total and clears the cart', async ({ page }) => {
     let orderPayload: {
       couponCode?: string;
@@ -154,6 +188,18 @@ test.describe('Checkout E2E Tests', () => {
 
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole('heading', { name: 'Danh sách sản phẩm' })).toBeVisible();
+  });
+
+  test('Multiple coupon attempts', async () => {
+    await checkoutPage.applyCoupon('SALE10');
+    await expect(checkoutPage.discountAmount).toContainText('1.500.000');
+    await expect(checkoutPage.checkoutTotal).toContainText('13.550.000');
+
+    await checkoutPage.applyCoupon('FIXED100K');
+
+    await expect(checkoutPage.formMessage).toContainText('FIXED100K');
+    await expect(checkoutPage.discountAmount).toContainText('100.000');
+    await expect(checkoutPage.checkoutTotal).toContainText('14.950.000');
   });
 });
 
