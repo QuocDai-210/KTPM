@@ -1,364 +1,178 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import CheckoutPage from './pages/CheckoutPage';
+
+const cartItem = {
+  productId: 'P001',
+  productName: 'Laptop Dell',
+  quantity: 1,
+  price: 15000000,
+};
 
 test.describe('Checkout E2E Tests', () => {
   let checkoutPage: CheckoutPage;
+  let removeCartItemCalls: number;
 
   test.beforeEach(async ({ page }) => {
     checkoutPage = new CheckoutPage(page);
+    removeCartItemCalls = 0;
 
-    // Setup: Login and add products to cart
-    await page.goto('/');
-
-    // Simulate login
-    await page.evaluate(() => {
-      localStorage.setItem('authToken', 'mock-jwt-token');
-      localStorage.setItem('userId', 'user01');
+    await page.route('**/api/products', async (route) => {
+      await route.fulfill({
+        json: [{ id: 'P001', name: 'Laptop Dell', price: 15000000, stock: 10 }],
+      });
     });
 
-    // Navigate to products and add item to cart
-    await page.goto('/products');
-    
-    // Add products to cart (if UI elements exist)
-    try {
-      const addButtons = await page.locator('[data-testid="add-to-cart-btn"]').all();
-      if (addButtons.length > 0) {
-        await addButtons[0].click();
-      }
-    } catch {
-      // Products may not be available, continue with cart
-    }
+    await page.route('**/api/cart/user01', async (route) => {
+      await route.fulfill({
+        json: {
+          success: true,
+          items: [cartItem],
+          itemCount: 1,
+          cartTotal: 15000000,
+        },
+      });
+    });
 
-    // Go to cart
+    await page.route('**/api/cart/user01/P001', async (route) => {
+      removeCartItemCalls += 1;
+      await route.fulfill({
+        json: {
+          success: true,
+          items: [],
+          itemCount: 0,
+          cartTotal: 0,
+        },
+      });
+    });
+
+    await page.route('**/api/orders', async (route) => {
+      await route.fulfill({
+        status: 201,
+        json: { orderId: 'ORD-CHECKOUT', status: 'PENDING', totalPrice: 15050000 },
+      });
+    });
+
     await page.goto('/cart');
+    await expect(checkoutPage.placeOrderBtn).toBeVisible();
   });
 
-  test('Checkout flow - Complete success path', async ({ page }) => {
-    // Act: Navigate to checkout
+  test('Checkout flow - complete success path', async ({ page }) => {
+    await expect(checkoutPage.cartItem('Laptop Dell')).toBeVisible();
     await checkoutPage.goToCheckout();
+    await checkoutPage.fillShippingAddress('123 Nguyen Trai, HCM');
+    await checkoutPage.placeOrder();
 
-    // Verify we're on checkout page
-    await expect(page).toHaveURL(/\/checkout/);
-
-    // Verify cart summary is displayed
-    const cartSummary = page.locator('[data-testid="cart-summary"]');
-    await expect(cartSummary).toBeVisible();
-
-    // Verify shipping info form
-    const shippingForm = page.locator('[data-testid="shipping-form"]');
-    await expect(shippingForm).toBeVisible();
-
-    // Fill shipping address
-    await page.fill('[data-testid="address-input"]', '123 Main St, City, Country');
-    await page.fill('[data-testid="phone-input"]', '0987654321');
-
-    // Select shipping method
-    const shippingMethod = page.locator('[data-testid="shipping-method-select"]').first();
-    if (await shippingMethod.isVisible()) {
-      await shippingMethod.click();
-    }
-
-    // Proceed to payment
-    const proceedBtn = page.locator('[data-testid="proceed-to-payment-btn"]');
-    if (await proceedBtn.isVisible()) {
-      await proceedBtn.click();
-    }
-
-    // Verify order confirmation
-    const confirmationMsg = page.locator('[data-testid="order-confirmation"]');
-    if (await confirmationMsg.isVisible()) {
-      await expect(confirmationMsg).toContainText('Success');
-    }
+    await expect(checkoutPage.successMessage).toContainText('ORD-CHECKOUT');
+    await expect(checkoutPage.emptyCartMessage).toBeVisible();
+    await expect(page).toHaveURL(/\/cart/);
+    expect(removeCartItemCalls).toBe(1);
   });
 
-  test('Price calculation - Verify accuracy', async ({ page }) => {
-    // Arrange: Go to checkout
-    await checkoutPage.goToCheckout();
-
-    // Act: Verify price display elements
-    const subtotalDisplay = page.locator('[data-testid="subtotal-display"]');
-    const discountDisplay = page.locator('[data-testid="discount-display"]');
-    const shippingDisplay = page.locator('[data-testid="shipping-display"]');
-    const totalDisplay = page.locator('[data-testid="total-display"]');
-
-    // Assert: All elements should be visible
-    await expect(subtotalDisplay).toBeVisible();
-    if (await discountDisplay.isVisible()) {
-      const discountText = await discountDisplay.textContent();
-      expect(discountText).toMatch(/[0-9,.]/);
-    }
-    
-    // Get values (if available)
-    if (await shippingDisplay.isVisible()) {
-      const shippingText = await shippingDisplay.textContent();
-      expect(shippingText).toBeTruthy();
-    }
-
-    if (await totalDisplay.isVisible()) {
-      const totalText = await totalDisplay.textContent();
-      expect(totalText).toBeTruthy();
-      expect(totalText).toMatch(/[0-9,.]/); // Should contain numbers
-    }
+  test('Price calculation - verify subtotal, shipping and total', async () => {
+    await expect(checkoutPage.cartSubtotal).toContainText('15.000.000');
+    await expect(checkoutPage.discountAmount).toContainText('0');
+    await expect(checkoutPage.shippingFee).toContainText('50.000');
+    await expect(checkoutPage.checkoutTotal).toContainText('15.050.000');
   });
 
-  test('Apply coupon - 10% discount', async ({ page }) => {
-    // Arrange: Go to checkout
-    await checkoutPage.goToCheckout();
+  test('Apply coupon - 10% discount', async () => {
+    await checkoutPage.applyCoupon('SALE10');
 
-    // Act: Apply coupon
-    const couponInput = page.locator('[data-testid="coupon-input"]');
-    const applyCouponBtn = page.locator('[data-testid="apply-coupon-btn"]');
-
-    if (await couponInput.isVisible()) {
-      await couponInput.fill('SALE10');
-      await applyCouponBtn.click();
-
-      // Wait for discount to be applied
-      await page.waitForTimeout(1000);
-
-      // Assert: Discount message should appear
-      const discountMsg = page.locator('[data-testid="discount-applied"]');
-      
-      if (await discountMsg.isVisible()) {
-        await expect(discountMsg).toContainText(/applied|success/i);
-      }
-
-      // Verify discount was calculated
-      const discountDisplay = page.locator('[data-testid="discount-display"]');
-      if (await discountDisplay.isVisible()) {
-        const discountText = await discountDisplay.textContent();
-        expect(discountText).toMatch(/[0-9,.]/);
-      }
-    }
+    await expect(checkoutPage.formMessage).toContainText('SALE10');
+    await expect(checkoutPage.discountAmount).toContainText('1.500.000');
+    await expect(checkoutPage.checkoutTotal).toContainText('13.550.000');
   });
 
-  test('Out of stock warning - Prevent checkout', async ({ page }) => {
-    // Setup: Add out-of-stock item (if possible)
-    // This would require backend API call or special test data
+  test('Invalid coupon - show validation error and clear discount', async () => {
+    await checkoutPage.applyCoupon('UNKNOWN');
 
-    // Act: Try to proceed with checkout
-    const proceedBtn = page.locator('[data-testid="proceed-to-payment-btn"]');
-
-    // If there's an inventory warning, it should be visible
-    const inventoryWarning = page.locator('[data-testid="inventory-warning"]');
-    
-    if (await inventoryWarning.isVisible()) {
-      // Assert: Warning should prevent checkout
-      const warningText = await inventoryWarning.textContent();
-      expect(warningText?.toLowerCase()).toContain('stock');
-
-      // Checkout should be disabled
-      await expect(proceedBtn).toBeDisabled();
-    } else {
-      // If no warning, proceed button should be enabled
-      if (await proceedBtn.isVisible()) {
-        await expect(proceedBtn).toBeEnabled();
-      }
-    }
+    await expect(checkoutPage.formMessage).toContainText('Mã giảm giá không hợp lệ');
+    await expect(checkoutPage.discountAmount).toContainText('0');
+    await expect(checkoutPage.checkoutTotal).toContainText('15.050.000');
   });
 
-  test('Invalid address - Show validation error', async ({ page }) => {
-    // Act: Go to checkout
-    await checkoutPage.goToCheckout();
+  test('Invalid address - show validation error', async () => {
+    await checkoutPage.shippingAddressInput.clear();
+    await checkoutPage.placeOrderBtn.click();
 
-    // Try to proceed without filling address
-    const proceedBtn = page.locator('[data-testid="proceed-to-payment-btn"]');
-    
-    if (await proceedBtn.isVisible()) {
-      // Try clicking with empty address
-      await proceedBtn.click();
-
-      // Assert: Error message should appear
-      const addressError = page.locator('[data-testid="address-error"]');
-      
-      if (await addressError.isVisible()) {
-        const errorText = await addressError.textContent();
-        expect(errorText?.toLowerCase()).toContain('address');
-      }
-    }
+    await expect(checkoutPage.formMessage).toContainText('Vui lòng nhập địa chỉ giao hàng');
+    await expect(checkoutPage.cartItem('Laptop Dell')).toBeVisible();
   });
 
-  test('Payment method selection', async ({ page }) => {
-    // Act: Go to checkout
-    await checkoutPage.goToCheckout();
+  test('Place order sends discounted total and clears the cart', async ({ page }) => {
+    let orderPayload: {
+      couponCode?: string;
+      shippingFee?: number;
+      shippingAddress?: string;
+      items?: Array<{ productId: string; quantity: number; price: number }>;
+    } | null = null;
 
-    // Verify payment methods are available
-    const paymentMethods = page.locator('[data-testid="payment-method-option"]');
-    const methodCount = await paymentMethods.count();
-
-    if (methodCount > 0) {
-      // Assert: Should have at least one payment method
-      expect(methodCount).toBeGreaterThan(0);
-
-      // Select first payment method
-      await paymentMethods.first().click();
-
-      // Verify selection is marked
-      const selected = await paymentMethods.first().locator('[data-testid="selected-indicator"]');
-      if (await selected.isVisible()) {
-        await expect(selected).toBeVisible();
-      }
-    }
-  });
-
-  test('Place order button - Enabled only when valid', async ({ page }) => {
-    // Act: Go to checkout
-    await checkoutPage.goToCheckout();
-
-    const placeOrderBtn = page.locator('[data-testid="place-order-btn"]');
-
-    if (await placeOrderBtn.isVisible()) {
-      // Initially button might be disabled (missing required fields)
-      const initiallyDisabled = await placeOrderBtn.isDisabled();
-      expect(typeof initiallyDisabled).toBe('boolean');
-      
-      // Fill required fields
-      const addressInput = page.locator('[data-testid="address-input"]');
-      if (await addressInput.isVisible()) {
-        await addressInput.fill('123 Test St');
-        
-        // After filling, button might be enabled
-        await page.waitForTimeout(500);
-        const isDisabled = await placeOrderBtn.isDisabled();
-        
-        // Should be enabled after valid input
-        if (!isDisabled) {
-          await expect(placeOrderBtn).toBeEnabled();
-        }
-      }
-    }
-  });
-
-  test('Order confirmation - Verify details displayed', async ({ page }) => {
-    // Setup: Complete checkout (simulated)
-    // In real scenario, this would be after successful order creation
-
-    // Navigate to order confirmation if such page exists
-    await page.goto('/order-confirmation', { waitUntil: 'domcontentloaded' }).catch(() => {
-      // Page might not exist in test environment
+    await page.route('**/api/orders', async (route) => {
+      orderPayload = route.request().postDataJSON();
+      await route.fulfill({
+        status: 201,
+        json: { orderId: 'ORD-SALE10', status: 'PENDING', totalPrice: 13550000 },
+      });
     });
 
-    // Verify order confirmation elements if present
-    const confirmationContainer = page.locator('[data-testid="order-confirmation"]');
-    
-    if (await confirmationContainer.isVisible()) {
-      // Check for order details
-      const orderId = page.locator('[data-testid="order-id"]');
-      const orderTotal = page.locator('[data-testid="order-total"]');
-      const orderDate = page.locator('[data-testid="order-date"]');
+    await checkoutPage.applyCoupon('SALE10');
+    await checkoutPage.fillShippingAddress('456 Le Loi, HCM');
+    await checkoutPage.placeOrder();
 
-      if (await orderId.isVisible()) {
-        const idText = await orderId.textContent();
-        expect(idText).toMatch(/ORD-|order-/i);
-      }
-
-      if (await orderTotal.isVisible()) {
-        const totalText = await orderTotal.textContent();
-        expect(totalText).toMatch(/[0-9,.]/);
-      }
-
-      if (await orderDate.isVisible()) {
-        const dateText = await orderDate.textContent();
-        expect(dateText).toBeTruthy();
-      }
-    }
+    expect(orderPayload).toMatchObject({
+      couponCode: 'SALE10',
+      shippingFee: 50000,
+      shippingAddress: '456 Le Loi, HCM',
+      items: [{ productId: 'P001', quantity: 1, price: 15000000 }],
+    });
+    await expect(checkoutPage.successMessage).toContainText('ORD-SALE10');
+    await expect(checkoutPage.emptyCartMessage).toBeVisible();
   });
 
-  test('Browser back button handling', async ({ page }) => {
-    // Act: Go to checkout
-    await checkoutPage.goToCheckout();
+  test('Order API failure - keeps cart and shows error message', async ({ page }) => {
+    await page.route('**/api/orders', async (route) => {
+      await route.fulfill({
+        status: 400,
+        json: { success: false, message: 'Không đủ tồn kho' },
+      });
+    });
 
-    // Verify checkout page
-    await expect(page).toHaveURL(/\/checkout/);
+    await checkoutPage.fillShippingAddress('789 Pasteur, HCM');
+    await checkoutPage.placeOrderBtn.click();
 
-    // Click back button
-    await page.goBack();
+    await expect(checkoutPage.formMessage).toContainText('Không đủ tồn kho');
+    await expect(checkoutPage.cartItem('Laptop Dell')).toBeVisible();
+    expect(removeCartItemCalls).toBe(0);
+  });
 
-    // Should go back to cart
+  test('Navigation returns from cart to product list', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Giỏ hàng' }).click();
     await expect(page).toHaveURL(/\/cart/);
 
-    // Cart should still be intact
-    const cartContainer = page.locator('[data-testid="cart-container"]');
-    if (await cartContainer.isVisible()) {
-      await expect(cartContainer).toBeVisible();
-    }
-  });
+    await page.getByRole('button', { name: 'San pham' }).click();
 
-  test('Multiple coupon attempts', async ({ page }) => {
-    // Act: Go to checkout
-    await checkoutPage.goToCheckout();
-
-    const couponInput = page.locator('[data-testid="coupon-input"]');
-    const applyCouponBtn = page.locator('[data-testid="apply-coupon-btn"]');
-
-    if (await couponInput.isVisible() && await applyCouponBtn.isVisible()) {
-      // First coupon
-      await couponInput.fill('SALE10');
-      await applyCouponBtn.click();
-      await page.waitForTimeout(500);
-
-      // Try applying second coupon
-      await couponInput.clear();
-      await couponInput.fill('SAVE500');
-      await applyCouponBtn.click();
-      await page.waitForTimeout(500);
-
-      // Check for message (might be error about multiple coupons)
-      const messages = page.locator('[data-testid*="message"], [data-testid*="error"]');
-      const messageCount = await messages.count();
-
-      expect(messageCount).toBeGreaterThan(0);
-    }
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole('heading', { name: 'Danh sách sản phẩm' })).toBeVisible();
   });
 });
 
 test.describe('Checkout E2E - Edge Cases', () => {
   test('Empty cart checkout attempt', async ({ page }) => {
-    // Setup: Ensure cart is empty
-    await page.goto('/');
-    await page.evaluate(() => {
-      localStorage.setItem('authToken', 'mock-jwt-token');
+    await page.route('**/api/cart/user01', async (route) => {
+      await route.fulfill({
+        json: {
+          success: true,
+          items: [],
+          itemCount: 0,
+          cartTotal: 0,
+        },
+      });
     });
 
-    // Navigate to checkout with empty cart
-    await page.goto('/checkout');
+    await page.goto('/cart');
 
-    // Should either redirect or show empty state
-    const emptyMessage = page.locator('[data-testid="empty-cart-message"]');
-    const proceedBtn = page.locator('[data-testid="proceed-to-payment-btn"]');
-
-    if (await emptyMessage.isVisible()) {
-      await expect(emptyMessage).toBeVisible();
-    }
-
-    if (await proceedBtn.isVisible()) {
-      await expect(proceedBtn).toBeDisabled();
-    }
-  });
-
-  test('Session timeout during checkout', async ({ page }) => {
-    // Start checkout
-    await page.goto('/checkout');
-
-    // Simulate session timeout by clearing auth token
-    await page.evaluate(() => {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userId');
-    });
-
-    // Try to place order
-    const placeOrderBtn = page.locator('[data-testid="place-order-btn"]');
-    
-    if (await placeOrderBtn.isVisible()) {
-      await placeOrderBtn.click();
-
-      // Should redirect to login or show auth error
-      await page.waitForTimeout(1000);
-      
-      const loginPage = page.url().includes('/login');
-      const authError = await page.locator('[data-testid="auth-error"]').isVisible();
-
-      expect(loginPage || authError).toBeTruthy();
-    }
+    await expect(page.getByTestId('empty-cart-message')).toBeVisible();
+    await expect(page.getByTestId('place-order-btn')).toHaveCount(0);
   });
 });

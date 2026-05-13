@@ -15,6 +15,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      shopcart-network:
+        aliases:
+          - postgres
     restart: unless-stopped
 
   backend:
@@ -32,6 +36,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - shopcart-network
     restart: unless-stopped
 
   frontend:
@@ -40,10 +46,17 @@ services:
       dockerfile: Dockerfile
     container_name: shopcart-frontend
     ports:
-      - "5173:80"
+      - "127.0.0.1:5173:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_started
+    networks:
+      - shopcart-network
     restart: unless-stopped
 
 volumes:
   postgres-data:
+
+networks:
+  shopcart-network:
+    driver: bridge
